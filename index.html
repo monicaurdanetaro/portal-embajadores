@@ -1405,6 +1405,23 @@ foroPosts.forEach(p=>{
   </div>`;
 });
 
+function show(id){
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('show'));
+  const pane = document.getElementById('pane-'+id);
+  if (pane) pane.classList.add('show');
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  const map={home:0,seguimiento:1,planificacion:2,novedades:3,foro:4,chat:5,embajadores:6};
+  if (map[id] !== undefined) document.querySelectorAll('.ni')[map[id]]?.classList.add('active');
+  if (id === 'admin' && todosEmbajadores.length) {
+    const activos = todosEmbajadores.filter(e=>get(e,'ESTATUS').toLowerCase().includes('activo')).length;
+    const paises = new Set(todosEmbajadores.map(e=>get(e,'PAÍS','PAIS','PAAS'))).size;
+    const adT=document.getElementById('admin-total'); if(adT) adT.textContent=todosEmbajadores.length;
+    const adA=document.getElementById('admin-activos'); if(adA) adA.textContent=activos;
+    const adI=document.getElementById('admin-inactivos'); if(adI) adI.textContent=todosEmbajadores.length-activos;
+    const adP=document.getElementById('admin-paises'); if(adP) adP.textContent=paises;
+  }
+}
+
 function exportarLista() {
   if (!todosEmbajadores.length) { alert('No hay datos cargados todavía.'); return; }
   const cols = ['NOMBRE Y APELLIDO','TIENDA','CARGO','ÁREA','ESTATUS','PAÍS','CÉDULA','FECHA DE INGRESO AL ROL'];
