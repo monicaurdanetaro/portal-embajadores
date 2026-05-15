@@ -850,7 +850,7 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
   <div class="content pane" id="pane-embajadores">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.5rem">
       <div><span class="sec-eye">Red nacional</span><h2 class="sec-ttl">Directorio de embajadores</h2><p class="sec-sub">Conoce a todos los embajadores, su tienda asignada, cargo y estado actual.</p></div>
-      <button class="btn btn-o">Exportar lista</button>
+      <button class="btn btn-o" onclick="exportarLista()">Exportar lista</button>
     </div>
 
     <div style="display:flex;gap:10px;margin-bottom:1.2rem;flex-wrap:wrap;align-items:center">
@@ -1405,7 +1405,25 @@ foroPosts.forEach(p=>{
   </div>`;
 });
 
-function show(id){
+function exportarLista() {
+  if (!todosEmbajadores.length) { alert('No hay datos cargados todavía.'); return; }
+  const cols = ['NOMBRE Y APELLIDO','TIENDA','CARGO','ÁREA','ESTATUS','PAÍS','CÉDULA','FECHA DE INGRESO AL ROL'];
+  const header = cols.join(',');
+  const rows = todosEmbajadores.map(e =>
+    cols.map(c => {
+      const val = get(e, c) || '';
+      return val.includes(',') ? `"${val}"` : val;
+    }).join(',')
+  );
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `embajadores_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
   document.querySelectorAll('.pane').forEach(p=>p.classList.remove('show'));
   document.getElementById('pane-'+id)?.classList.add('show');
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
