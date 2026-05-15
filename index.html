@@ -196,6 +196,21 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
 /* EMBAJADORES */
 .emb-filters{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
 .emb-filter{font-size:12px;font-weight:500;color:var(--ts);background:var(--card);border:1px solid var(--border);padding:5px 12px;border-radius:20px;cursor:pointer;transition:all .15s}
+.cal-filter{font-family:var(--fb);font-size:12px;font-weight:500;color:var(--ts);background:var(--card);border:1px solid var(--border);padding:5px 12px;border-radius:20px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center}
+.cal-filter.active{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
+.cal-day{border-right:1px solid var(--border);border-bottom:1px solid var(--border);min-height:80px;padding:4px;transition:background .12s}
+.cal-day:nth-child(7n){border-right:none}
+.cal-day.other-month{background:var(--bg)}
+.cal-day.today .cal-num{background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.cal-day.has-events{cursor:pointer}
+.cal-day.has-events:hover{background:#f4f7ff}
+.cal-num{font-size:12px;font-weight:600;color:var(--tp);margin-bottom:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.cal-event{font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+.cal-event.Comercial{background:#dbeafe;color:#1e40af}
+.cal-event.Excelencia{background:#d1fae5;color:#065f46}
+.cal-event.Servicio{background:#fef3c7;color:#92400e}
+.cal-event.otro{background:#f3f4f6;color:#374151}
+.cal-more{font-size:10px;color:var(--tm);font-weight:600;padding:1px 4px}
 .emb-filter.active,.emb-filter:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
 .emb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.8rem;margin-bottom:1.6rem}
 .emb-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:all .18s;text-align:center}
@@ -602,84 +617,54 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
 
   <!-- ══ PLANIFICACIÓN ══ -->
   <div class="content pane" id="pane-planificacion">
-    <span class="sec-eye">Calendario</span>
-    <h2 class="sec-ttl">Planificación de cursos y talleres</h2>
-    <p class="sec-sub">Todas las actividades de capacitación programadas para tu tienda y la red de embajadores.</p>
-
-    <div style="display:flex;gap:8px;margin-bottom:1.2rem;flex-wrap:wrap">
-      <button class="emb-filter active">Todos</button>
-      <button class="emb-filter">Obligatorios</button>
-      <button class="emb-filter">Embajadores</button>
-      <button class="emb-filter">Virtuales</button>
-      <button class="emb-filter">Presenciales</button>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.5rem">
+      <div>
+        <span class="sec-eye">Calendario</span>
+        <h2 class="sec-ttl">Planificación de cursos</h2>
+        <p class="sec-sub">Todos los cursos programados. Se actualiza automáticamente desde el Sheets.</p>
+      </div>
+      <button class="btn btn-o btn-sm" onclick="cargarCursos()" style="margin-top:.3rem">↻ Actualizar</button>
     </div>
 
+    <!-- Filtros por escuela -->
+    <div style="display:flex;gap:8px;margin-bottom:1.2rem;flex-wrap:wrap;align-items:center">
+      <button class="cal-filter active" data-escuela="todos" onclick="filtrarCalendario(this)">Todas las escuelas</button>
+      <button class="cal-filter" data-escuela="Comercial" onclick="filtrarCalendario(this)">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1a56db;margin-right:4px"></span>Comercial
+      </button>
+      <button class="cal-filter" data-escuela="Excelencia" onclick="filtrarCalendario(this)">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0d9f6e;margin-right:4px"></span>Excelencia
+      </button>
+      <button class="cal-filter" data-escuela="Servicio" onclick="filtrarCalendario(this)">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#b45309;margin-right:4px"></span>Servicio
+      </button>
+    </div>
+
+    <!-- Navegación del calendario -->
     <div class="card" style="margin-bottom:1rem">
-      <div class="card-head"><span class="card-ttl">Mayo 2025</span></div>
-      <div class="card-body">
-        <div class="ev-row">
-          <div class="ev-date"><div class="ev-day">15</div><div class="ev-mon">May</div></div>
-          <div class="ev-info">
-            <div class="ev-ttl">Cierre ciclo capacitación Q1 · Entrega de informes</div>
-            <div class="ev-sub"><span class="pill pill-red">Vence hoy</span> · Obligatorio todos los embajadores</div>
-          </div>
-          <button class="btn btn-p btn-sm">Subir informe</button>
-        </div>
-        <div class="ev-row">
-          <div class="ev-date"><div class="ev-day">21</div><div class="ev-mon">May</div></div>
-          <div class="ev-info">
-            <div class="ev-ttl">Taller: Cerebro Digital con NotebookLM</div>
-            <div class="ev-sub"><span class="pill pill-live">Live</span> · Zoom · 10:00 am – 12:00 pm · Edward Castillo</div>
-          </div>
-          <button class="btn btn-o btn-sm">Inscribir equipo</button>
-        </div>
-        <div class="ev-row">
-          <div class="ev-date"><div class="ev-day">28</div><div class="ev-mon">May</div></div>
-          <div class="ev-info">
-            <div class="ev-ttl">Actualización protocolo dispensación de medicamentos</div>
-            <div class="ev-sub"><span class="pill pill-new">Nuevo</span> · Plataforma LMS · Obligatorio · Todas las tiendas</div>
-          </div>
-          <button class="btn btn-p btn-sm">Ver curso</button>
-        </div>
+      <div class="card-head" style="justify-content:space-between">
+        <button onclick="cambiarMes(-1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--ts);padding:0 6px;line-height:1">‹</button>
+        <span class="card-ttl" id="cal-titulo" style="font-size:14px;font-weight:700;color:var(--navy)"></span>
+        <button onclick="cambiarMes(1)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--ts);padding:0 6px;line-height:1">›</button>
       </div>
+
+      <!-- Grid días de semana -->
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border)">
+        ${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map(d=>
+          `<div style="text-align:center;font-size:11px;font-weight:600;color:var(--tm);padding:6px 0;text-transform:uppercase;letter-spacing:.5px">${d}</div>`
+        ).join('')}
+      </div>
+
+      <!-- Grid días del mes -->
+      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);min-height:280px"></div>
     </div>
 
-    <div class="card">
-      <div class="card-head"><span class="card-ttl">Junio 2025</span></div>
-      <div class="card-body">
-        <div class="ev-row">
-          <div class="ev-date"><div class="ev-day">3</div><div class="ev-mon">Jun</div></div>
-          <div class="ev-info">
-            <div class="ev-ttl">Encuentro de Embajadores Q2 · Sede principal</div>
-            <div class="ev-sub"><span class="pill pill-new">Nuevo</span> · Presencial · 8:00 am – 5:00 pm · Confirmación requerida</div>
-          </div>
-          <button class="btn btn-p btn-sm">Confirmar asistencia</button>
-        </div>
-        <div class="ev-row">
-          <div class="ev-date"><div class="ev-day">10</div><div class="ev-mon">Jun</div></div>
-          <div class="ev-info">
-            <div class="ev-ttl">Certificación BT Program · Módulo 3</div>
-            <div class="ev-sub"><span class="pill pill-pend">Pendiente inscripción</span> · Plataforma · 4 horas</div>
-          </div>
-          <button class="btn btn-o btn-sm">Inscribirse</button>
-        </div>
-        <div class="ev-row">
-          <div class="ev-date"><div class="ev-day">18</div><div class="ev-mon">Jun</div></div>
-          <div class="ev-info">
-            <div class="ev-ttl">Taller: Liderazgo y desarrollo de equipos para embajadores</div>
-            <div class="ev-sub"><span class="pill pill-pend">Por confirmar</span> · Equipo Capacitación Central</div>
-          </div>
-          <div class="ev-arrow">→</div>
-        </div>
-        <div class="ev-row" style="border-bottom:none">
-          <div class="ev-date"><div class="ev-day">25</div><div class="ev-mon">Jun</div></div>
-          <div class="ev-info">
-            <div class="ev-ttl">Cierre ciclo Q2 · Evaluación indicadores de tienda</div>
-            <div class="ev-sub"><span class="pill pill-pend">Próximamente</span> · Todos los embajadores</div>
-          </div>
-          <div class="ev-arrow">→</div>
-        </div>
+    <!-- Lista de cursos del mes seleccionado -->
+    <div>
+      <div class="sec-row" style="margin-bottom:.8rem">
+        <span style="font-size:13px;font-weight:600;color:var(--tp)" id="cal-lista-titulo">Cursos este mes</span>
       </div>
+      <div id="cal-lista"></div>
     </div>
   </div>
 
@@ -1150,6 +1135,7 @@ async function cargarCursos() {
     cursosData = parseCSV(text);
     renderCursos(cursosData,'cursos-list');
     renderCursos(cursosData,'cursos-list-admin');
+    renderCalendario();
   } catch(e) {
     ['cursos-list','cursos-list-admin'].forEach(id => {
       const el = document.getElementById(id);
@@ -1254,6 +1240,182 @@ const foroPosts=[
   {author:'Ana Pérez',store:'Equipo Cap.',title:'📢 Nueva funcionalidad disponible en el portal',preview:'Ya pueden subir los informes directamente desde el portal...',replies:18,likes:25,time:'Ayer',col:'#b45309'},
 ];
 
+// ── CALENDARIO ────────────────────────────────────
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+let calMes = new Date().getMonth();
+let calAnio = new Date().getFullYear();
+let calFiltroEscuela = 'todos';
+
+function parseFecha(str) {
+  if (!str) return null;
+  // Soporta DD/MM/YYYY y YYYY-MM-DD
+  const partes = str.includes('/') ? str.split('/') : str.split('-');
+  if (partes.length !== 3) return null;
+  if (str.includes('/')) {
+    const [d, m, a] = partes;
+    return new Date(parseInt(a), parseInt(m)-1, parseInt(d));
+  } else {
+    const [a, m, d] = partes;
+    return new Date(parseInt(a), parseInt(m)-1, parseInt(d));
+  }
+}
+
+function colorEscuela(escuela) {
+  const e = (escuela||'').trim();
+  if (e === 'Comercial')  return '#1a56db';
+  if (e === 'Excelencia') return '#0d9f6e';
+  if (e === 'Servicio')   return '#b45309';
+  return '#888780';
+}
+
+function cursosDelMes(mes, anio) {
+  return cursosData.filter(c => {
+    const f = parseFecha(c['Fecha'] || c['FECHA'] || '');
+    if (!f) return false;
+    if (calFiltroEscuela !== 'todos' && (c['Escuela']||c['ESCUELA']||'').trim() !== calFiltroEscuela) return false;
+    return f.getMonth() === mes && f.getFullYear() === anio;
+  });
+}
+
+function renderCalendario() {
+  const titulo = document.getElementById('cal-titulo');
+  const grid   = document.getElementById('cal-grid');
+  const lista  = document.getElementById('cal-lista');
+  const listaTitulo = document.getElementById('cal-lista-titulo');
+  if (!titulo || !grid) return;
+
+  titulo.textContent = `${MESES[calMes]} ${calAnio}`;
+  if (listaTitulo) listaTitulo.textContent = `Cursos en ${MESES[calMes]} ${calAnio}`;
+
+  const hoy = new Date();
+  const primerDia = new Date(calAnio, calMes, 1).getDay();
+  const diasEnMes = new Date(calAnio, calMes+1, 0).getDate();
+  const diasAnterior = new Date(calAnio, calMes, 0).getDate();
+
+  // Agrupar cursos por día
+  const cursosPorDia = {};
+  cursosData.forEach(c => {
+    const f = parseFecha(c['Fecha'] || c['FECHA'] || '');
+    if (!f) return;
+    if (calFiltroEscuela !== 'todos' && (c['Escuela']||c['ESCUELA']||'').trim() !== calFiltroEscuela) return;
+    if (f.getMonth() === calMes && f.getFullYear() === calAnio) {
+      const key = f.getDate();
+      if (!cursosPorDia[key]) cursosPorDia[key] = [];
+      cursosPorDia[key].push(c);
+    }
+  });
+
+  let html = '';
+  // Días del mes anterior
+  for (let i = primerDia - 1; i >= 0; i--) {
+    html += `<div class="cal-day other-month"><div class="cal-num" style="color:var(--tm)">${diasAnterior - i}</div></div>`;
+  }
+  // Días del mes actual
+  for (let d = 1; d <= diasEnMes; d++) {
+    const esHoy = d === hoy.getDate() && calMes === hoy.getMonth() && calAnio === hoy.getFullYear();
+    const eventos = cursosPorDia[d] || [];
+    const tieneEventos = eventos.length > 0;
+    const maxVisible = 2;
+    const eventosHTML = eventos.slice(0, maxVisible).map(c => {
+      const esc = (c['Escuela']||c['ESCUELA']||'otro').trim();
+      const nombre = c['Nombre del curso']||c['NOMBRE DEL CURSO']||c['Nombre']||'Curso';
+      return `<div class="cal-event ${esc}" title="${nombre}·${c['Población']||''}">${nombre}</div>`;
+    }).join('');
+    const masHTML = eventos.length > maxVisible
+      ? `<div class="cal-more">+${eventos.length - maxVisible} más</div>` : '';
+    html += `<div class="cal-day${esHoy?' today':''}${tieneEventos?' has-events':''}" onclick="${tieneEventos?`mostrarDia(${d})`:''}">
+      <div class="cal-num">${d}</div>
+      ${eventosHTML}${masHTML}
+    </div>`;
+  }
+  // Rellenar días del siguiente mes
+  const totalCeldas = Math.ceil((primerDia + diasEnMes) / 7) * 7;
+  for (let i = 1; i <= totalCeldas - primerDia - diasEnMes; i++) {
+    html += `<div class="cal-day other-month"><div class="cal-num" style="color:var(--tm)">${i}</div></div>`;
+  }
+  grid.innerHTML = html;
+
+  // Lista de cursos del mes
+  const del_mes = cursosDelMes(calMes, calAnio).sort((a,b) => {
+    const fa = parseFecha(a['Fecha']||a['FECHA']||'');
+    const fb = parseFecha(b['Fecha']||b['FECHA']||'');
+    return (fa||0) - (fb||0);
+  });
+
+  if (!lista) return;
+  if (!del_mes.length) {
+    lista.innerHTML = `<div style="padding:1rem;text-align:center;color:var(--tm);font-size:13px">No hay cursos programados para este mes.</div>`;
+    return;
+  }
+  lista.innerHTML = del_mes.map((c, i) => {
+    const nombre  = c['Nombre del curso']||c['NOMBRE DEL CURSO']||c['Nombre']||'—';
+    const fecha   = parseFecha(c['Fecha']||c['FECHA']||'');
+    const escuela = (c['Escuela']||c['ESCUELA']||'—').trim();
+    const pobla   = c['Población']||c['POBLACION']||'—';
+    const color   = colorEscuela(escuela);
+    const esHoy2  = fecha && fecha.toDateString() === new Date().toDateString();
+    const esPasado= fecha && fecha < new Date() && !esHoy2;
+    return `<div class="ev-row" style="${i===del_mes.length-1?'border-bottom:none':''}">
+      <div class="ev-date" style="background:${color}15;border:1px solid ${color}30">
+        <div class="ev-day" style="color:${color}">${fecha?fecha.getDate():'—'}</div>
+        <div class="ev-mon" style="color:${color}">${fecha?MESES_CORTO[fecha.getMonth()]:'—'}</div>
+      </div>
+      <div class="ev-info">
+        <div class="ev-ttl" style="${esPasado?'color:var(--tm);text-decoration:line-through':''}">${nombre}</div>
+        <div class="ev-sub">
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-right:4px;vertical-align:middle"></span>
+          ${escuela} · ${pobla}
+          ${esHoy2?'<span class="pill pill-live" style="margin-left:6px">Hoy</span>':''}
+          ${esPasado?'<span class="pill pill-pend" style="margin-left:6px">Pasado</span>':''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function mostrarDia(dia) {
+  const eventos = cursosData.filter(c => {
+    const f = parseFecha(c['Fecha']||c['FECHA']||'');
+    return f && f.getDate()===dia && f.getMonth()===calMes && f.getFullYear()===calAnio;
+  });
+  if (!eventos.length) return;
+  const lista = document.getElementById('cal-lista');
+  const listaTitulo = document.getElementById('cal-lista-titulo');
+  if (listaTitulo) listaTitulo.textContent = `Cursos del ${dia} de ${MESES[calMes]}`;
+  if (lista) lista.innerHTML = eventos.map((c,i) => {
+    const nombre  = c['Nombre del curso']||c['Nombre']||'—';
+    const escuela = (c['Escuela']||'—').trim();
+    const pobla   = c['Población']||'—';
+    const color   = colorEscuela(escuela);
+    return `<div class="ev-row" style="${i===eventos.length-1?'border-bottom:none':''}">
+      <div class="ev-date" style="background:${color}15;border:1px solid ${color}30">
+        <div class="ev-day" style="color:${color}">${dia}</div>
+        <div class="ev-mon" style="color:${color}">${MESES_CORTO[calMes]}</div>
+      </div>
+      <div class="ev-info">
+        <div class="ev-ttl">${nombre}</div>
+        <div class="ev-sub"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-right:4px;vertical-align:middle"></span>${escuela} · ${pobla}</div>
+      </div>
+    </div>`;
+  }).join('');
+  lista.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function cambiarMes(delta) {
+  calMes += delta;
+  if (calMes > 11) { calMes=0; calAnio++; }
+  if (calMes < 0)  { calMes=11; calAnio--; }
+  renderCalendario();
+}
+
+function filtrarCalendario(btn) {
+  document.querySelectorAll('.cal-filter').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  calFiltroEscuela = btn.dataset.escuela;
+  renderCalendario();
+}
+
 // ── DOM READY ─────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -1349,6 +1511,7 @@ document.addEventListener('DOMContentLoaded', () => {
   cargarEmbajadores();
   cargarCursos();
   renderNovedades();
+  renderCalendario();
 });
 </script>
 </body>
