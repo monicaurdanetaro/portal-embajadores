@@ -244,6 +244,8 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
 .content{animation:fu .45s .15s both}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -555,62 +557,45 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
 
   <!-- ══ SEGUIMIENTO ══ -->
   <div class="content pane" id="pane-seguimiento">
-    <span class="sec-eye">Mi tienda · T-045</span>
-    <h2 class="sec-ttl">Seguimiento de capacitaciones</h2>
-    <p class="sec-sub">Estado de cumplimiento de tu equipo. Última actualización: hoy 09:15 am</p>
-
-    <div class="stats" style="margin-bottom:1.4rem">
-      <div class="stat"><div class="stat-n">72<span>%</span></div><div class="stat-l">Completitud general</div><div class="stat-bar"><div class="stat-fill green" style="width:72%"></div></div></div>
-      <div class="stat"><div class="stat-n">14</div><div class="stat-l">Completaron todo</div><div class="stat-bar"><div class="stat-fill green" style="width:60%"></div></div></div>
-      <div class="stat"><div class="stat-n" style="color:#f59e0b">6</div><div class="stat-l">Con pendientes</div><div class="stat-bar"><div class="stat-fill amber" style="width:25%"></div></div></div>
-      <div class="stat"><div class="stat-n" style="color:var(--red)">3</div><div class="stat-l">Cursos vencidos</div><div class="stat-bar"><div class="stat-fill" style="width:12%;background:var(--red)"></div></div></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.5rem">
+      <div>
+        <span class="sec-eye">Academia Farmatodo</span>
+        <h2 class="sec-ttl">Seguimiento de capacitaciones</h2>
+        <p class="sec-sub">Progreso real por escuela, programa y colaborador.</p>
+      </div>
+      <button class="btn btn-o btn-sm" onclick="cargarSeguimiento()" style="margin-top:.3rem">↻ Actualizar</button>
     </div>
 
-    <div class="card" style="margin-bottom:1.2rem">
-      <div class="card-head">
-        <span class="card-ttl">Colaboradores · Tienda T-045</span>
-        <div style="display:flex;gap:7px">
-          <button class="btn btn-o btn-sm">Exportar</button>
-          <button class="btn btn-p btn-sm">Enviar recordatorio</button>
-        </div>
+    <!-- Filtros -->
+    <div style="display:flex;gap:8px;margin-bottom:1.2rem;flex-wrap:wrap;align-items:center">
+      <div style="display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <select id="seg-filtro-tienda" onchange="filtrarSeguimiento()" style="border:none;background:none;font-family:var(--fb);font-size:12px;color:var(--ts);outline:none;cursor:pointer">
+          <option value="">Todas las tiendas</option>
+        </select>
       </div>
-      <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead><tr style="border-bottom:1px solid var(--border)">
-            <th style="text-align:left;padding:8px 1rem;color:var(--tm);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Colaborador</th>
-            <th style="text-align:left;padding:8px 1rem;color:var(--tm);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Cargo</th>
-            <th style="text-align:center;padding:8px 1rem;color:var(--tm);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Atención cliente</th>
-            <th style="text-align:center;padding:8px 1rem;color:var(--tm);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px">BPF</th>
-            <th style="text-align:center;padding:8px 1rem;color:var(--tm);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Seg. e Higiene</th>
-            <th style="text-align:center;padding:8px 1rem;color:var(--tm);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px">% General</th>
-          </tr></thead>
-          <tbody id="colab-tbody">
-          </tbody>
-        </table>
+      <div style="display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <select id="seg-filtro-cargo" onchange="filtrarSeguimiento()" style="border:none;background:none;font-family:var(--fb);font-size:12px;color:var(--ts);outline:none;cursor:pointer">
+          <option value="">Todos los cargos</option>
+        </select>
       </div>
+      <span id="seg-contador" style="font-size:11px;color:var(--tm);margin-left:auto"></span>
     </div>
 
-    <div class="card">
-      <div class="card-head"><span class="card-ttl">Cursos con rezago crítico</span></div>
-      <div class="card-body">
-        <div class="prog-row">
-          <div class="prog-icon" style="background:var(--red-bg)"><svg viewBox="0 0 24 24" style="stroke:#dc2626"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-          <div class="prog-info">
-            <div class="prog-name">Seguridad e Higiene en tienda</div>
-            <div class="prog-meta">Venció: 15 mayo · Solo 8/20 completaron</div>
-            <div class="prog-bar"><div class="prog-fill" style="width:40%;background:var(--red)"></div></div>
-          </div>
-          <button class="btn btn-p btn-sm">Notificar</button>
-        </div>
-        <div class="prog-row" style="border-bottom:none">
-          <div class="prog-icon" style="background:var(--amber-bg)"><svg viewBox="0 0 24 24" style="stroke:#b45309"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-          <div class="prog-info">
-            <div class="prog-name">Atención al cliente FTD</div>
-            <div class="prog-meta">Vence: 30 mayo · 6 colaboradores sin completar</div>
-            <div class="prog-bar"><div class="prog-fill warn" style="width:70%"></div></div>
-          </div>
-          <button class="btn btn-o btn-sm">Recordar</button>
-        </div>
+    <!-- Stats -->
+    <div class="stats" style="margin-bottom:1.4rem" id="seg-stats">
+      <div class="stat"><div class="stat-n" id="seg-pct-gral">—</div><div class="stat-l">Completitud general</div><div class="stat-bar"><div class="stat-fill green" id="seg-bar-gral" style="width:0%"></div></div></div>
+      <div class="stat"><div class="stat-n" id="seg-completos">—</div><div class="stat-l">Completaron todo</div><div class="stat-bar"><div class="stat-fill green" id="seg-bar-comp" style="width:0%"></div></div></div>
+      <div class="stat"><div class="stat-n" id="seg-pendientes" style="color:#f59e0b">—</div><div class="stat-l">Con pendientes</div><div class="stat-bar"><div class="stat-fill amber" id="seg-bar-pend" style="width:0%"></div></div></div>
+      <div class="stat"><div class="stat-n" id="seg-sin-inicio" style="color:var(--red)">—</div><div class="stat-l">Sin iniciar</div><div class="stat-bar"><div class="stat-fill" id="seg-bar-sin" style="width:0%;background:var(--red)"></div></div></div>
+    </div>
+
+    <!-- Vista por Escuelas → Programas → Colaboradores -->
+    <div id="seg-escuelas-container">
+      <div style="display:flex;align-items:center;gap:10px;padding:2rem;color:var(--tm);font-size:13px">
+        <div style="width:16px;height:16px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>
+        Cargando progreso desde Firebase...
       </div>
     </div>
   </div>
@@ -985,8 +970,207 @@ const SHEETS = {
   directorio: PROXY + '?gid=0',
   cursos:     PROXY + '?gid=1532918966',
 };
-const ROL_USUARIO   = 'admin';
+const ROL_USUARIO    = 'admin';
 const NOMBRE_USUARIO = 'Mónica Urdaneta';
+
+// ── FIREBASE (solo lectura) ───────────────────────
+firebase.initializeApp({
+  apiKey: "AIzaSyAowzSww0NYyB_nER8J_0rQeeZ7WnJSIJs",
+  authDomain: "academia-farmatodo.firebaseapp.com",
+  projectId: "academia-farmatodo",
+  storageBucket: "academia-farmatodo.firebasestorage.app",
+  messagingSenderId: "1085941179882",
+  appId: "1:1085941179882:web:f41ab01032d3abccf2be93"
+});
+const db = firebase.firestore();
+
+// ── SEGUIMIENTO FIREBASE (solo lectura) ──────────
+let segData = [];
+
+function colorPct(p) { return p>=80?'var(--green)':p>=40?'var(--amber)':'var(--red)'; }
+
+function pctBar(p, color) {
+  return `<div style="display:flex;align-items:center;gap:6px;min-width:120px">
+    <div style="flex:1;height:5px;background:var(--bg);border-radius:4px;overflow:hidden">
+      <div style="height:100%;width:${p}%;background:${color};border-radius:4px"></div>
+    </div>
+    <span style="font-size:11px;font-weight:700;color:${color};min-width:28px">${p}%</span>
+  </div>`;
+}
+
+function toggleEsc(id) {
+  const el=$(id), icon=$('icon-'+id);
+  if(!el) return;
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'block';
+  if(icon) icon.textContent=open?'▶':'▼';
+}
+function toggleProg(id) {
+  const el=$(id), icon=$('icon-'+id);
+  if(!el) return;
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'block';
+  if(icon) icon.textContent=open?'▶':'▼';
+}
+
+function filtrarSeguimiento() {
+  const tienda=$('seg-filtro-tienda')?.value||'';
+  const cargo=$('seg-filtro-cargo')?.value||'';
+  let lista=[...segData];
+  if(tienda) lista=lista.filter(u=>u.tienda===tienda);
+  if(cargo)  lista=lista.filter(u=>u.cargo===cargo);
+  renderEscuelas(lista);
+}
+
+function renderEscuelas(usuarios) {
+  const cont=$('seg-escuelas-container');
+  if(!cont) return;
+  if(!usuarios.length){
+    cont.innerHTML=`<div style="padding:2rem;text-align:center;color:var(--tm);font-size:13px">No se encontraron usuarios con el filtro seleccionado.</div>`;
+    return;
+  }
+  const total=usuarios.length;
+  const pctGral=Math.round(usuarios.reduce((s,u)=>s+u.pctGral,0)/total);
+  const comp=usuarios.filter(u=>u.pctGral===100).length;
+  const pend=usuarios.filter(u=>u.pctGral>0&&u.pctGral<100).length;
+  const sinI=usuarios.filter(u=>u.pctGral===0).length;
+  const sv=(id,v)=>{const el=$(id);if(el)el.textContent=v;};
+  const sb=(id,v)=>{const el=$(id);if(el)el.style.width=v+'%';};
+  sv('seg-pct-gral',pctGral+'%'); sb('seg-bar-gral',pctGral);
+  sv('seg-completos',comp);       sb('seg-bar-comp',Math.round(comp/total*100));
+  sv('seg-pendientes',pend);      sb('seg-bar-pend',Math.round(pend/total*100));
+  sv('seg-sin-inicio',sinI);      sb('seg-bar-sin',Math.round(sinI/total*100));
+  const cnt=$('seg-contador'); if(cnt) cnt.textContent=total+' colaborador'+(total!==1?'es':'');
+
+  // Agrupar por escuela
+  const escMap={};
+  usuarios.forEach(u=>{
+    u.escuelas.forEach(e=>{
+      if(!escMap[e.id]) escMap[e.id]={titulo:e.titulo,usuarios:[],pcts:[]};
+      escMap[e.id].usuarios.push(u);
+      escMap[e.id].pcts.push(e.progreso);
+    });
+  });
+
+  const html=Object.entries(escMap).map(([escId,esc])=>{
+    const pctEsc=Math.round(esc.pcts.reduce((s,p)=>s+p,0)/esc.pcts.length);
+    const colorEsc=colorPct(pctEsc);
+
+    // Programas de esta escuela
+    const progMap={};
+    esc.usuarios.forEach(u=>{
+      u.programas.filter(p=>p.titulo&&p.titulo.toLowerCase().includes(
+        (esc.titulo||'').split('-')[0].toLowerCase().trim().substring(0,8)
+      )).forEach(p=>{
+        if(!progMap[p.id]) progMap[p.id]={titulo:p.titulo,usuarios:[],pcts:[]};
+        progMap[p.id].usuarios.push(u);
+        progMap[p.id].pcts.push(p.progreso);
+      });
+    });
+
+    const progsHTML=Object.entries(progMap).map(([pId,prog])=>{
+      const pctP=Math.round(prog.pcts.reduce((s,p)=>s+p,0)/prog.pcts.length);
+      const colorP=colorPct(pctP);
+      const nombreProg=(prog.titulo.split('|')[0]||prog.titulo).trim();
+      const colabsHTML=prog.usuarios.map((u,i)=>{
+        const up=u.programas.find(p=>p.id===pId);
+        const pctU=up?up.progreso:0;
+        const colorU=colorPct(pctU);
+        return `<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:7px 1rem"><div style="display:flex;align-items:center;gap:7px">
+            <div style="width:22px;height:22px;border-radius:50%;background:${col(i)};color:#fff;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${ini(u.nombre)}</div>
+            <div style="font-size:12px;font-weight:600;color:var(--tp)">${u.nombre}</div>
+          </div></td>
+          <td style="padding:7px 1rem;font-size:11px;color:var(--ts)">${u.cargo}</td>
+          <td style="padding:7px 1rem;font-size:11px;color:var(--ts)">${u.tienda}</td>
+          <td style="padding:7px 1rem">${pctBar(pctU,colorU)}</td>
+          <td style="padding:7px 1rem;text-align:center"><span class="pill ${pctU===100?'pill-done':pctU>0?'pill-live':'pill-pend'}">${pctU===100?'Completo':pctU>0?'En curso':'Sin iniciar'}</span></td>
+        </tr>`;
+      }).join('');
+      return `<div style="border-top:1px solid var(--border)">
+        <div onclick="toggleProg('prog-${pId}')" style="display:flex;align-items:center;gap:10px;padding:9px 1.5rem;cursor:pointer;background:var(--bg)" onmouseover="this.style.background='#edf0fb'" onmouseout="this.style.background='var(--bg)'">
+          <span id="icon-prog-${pId}" style="font-size:10px;color:var(--tm)">▶</span>
+          <span style="font-size:12.5px;font-weight:600;color:var(--tp);flex:1">${nombreProg}</span>
+          <span style="font-size:11px;color:var(--tm);margin-right:10px">${prog.usuarios.length} personas</span>
+          ${pctBar(pctP,colorP)}
+        </div>
+        <div id="prog-${pId}" style="display:none">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:#f8faff;border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:6px 1rem;color:var(--tm);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Colaborador</th>
+              <th style="text-align:left;padding:6px 1rem;color:var(--tm);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Cargo</th>
+              <th style="text-align:left;padding:6px 1rem;color:var(--tm);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Tienda</th>
+              <th style="text-align:left;padding:6px 1rem;color:var(--tm);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Progreso</th>
+              <th style="text-align:center;padding:6px 1rem;color:var(--tm);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Estado</th>
+            </tr></thead>
+            <tbody>${colabsHTML}</tbody>
+          </table>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="card" style="margin-bottom:.8rem">
+      <div onclick="toggleEsc('esc-${escId}')" style="display:flex;align-items:center;gap:12px;padding:1rem 1.2rem;cursor:pointer" onmouseover="this.style.background='#f8faff'" onmouseout="this.style.background=''">
+        <div style="width:36px;height:36px;border-radius:9px;background:${colorEsc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${colorEsc}" stroke-width="2" stroke-linecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:var(--navy)">${esc.titulo}</div>
+          <div style="font-size:11px;color:var(--tm);margin-top:1px">${esc.usuarios.length} colaboradores · ${Object.keys(progMap).length} programas</div>
+        </div>
+        ${pctBar(pctEsc,colorEsc)}
+        <span id="icon-esc-${escId}" style="font-size:10px;color:var(--tm);margin-left:8px">▶</span>
+      </div>
+      <div id="esc-${escId}" style="display:none;border-top:1px solid var(--border)">
+        ${progsHTML||'<div style="padding:1rem;color:var(--tm);font-size:12px;text-align:center">No hay programas disponibles</div>'}
+      </div>
+    </div>`;
+  }).join('');
+
+  cont.innerHTML=html||`<div style="padding:2rem;text-align:center;color:var(--tm);font-size:13px">No hay datos de escuelas.</div>`;
+}
+
+async function cargarSeguimiento() {
+  const cont=$('seg-escuelas-container');
+  if(cont) cont.innerHTML=`<div style="display:flex;align-items:center;gap:10px;padding:2rem;color:var(--tm);font-size:13px"><div style="width:16px;height:16px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>Cargando datos desde Firebase...</div>`;
+  try {
+    const usersSnap=await db.collection('users').limit(300).get();
+    const promesas=usersSnap.docs.map(async uDoc=>{
+      const u=uDoc.data();
+      if(!u.display_name&&!u.nombre) return null;
+      const [escSnap,progSnap]=await Promise.all([
+        db.collection('users').doc(uDoc.id).collection('progresoEscuela').get(),
+        db.collection('users').doc(uDoc.id).collection('progresoProgramas').get()
+      ]);
+      const escuelas=escSnap.docs.map(e=>{
+        const d=e.data();
+        return {id:e.id,titulo:d.titulo||e.id,progreso:Math.round((d.progreso||0)*100)};
+      });
+      const programas=progSnap.docs.map(p=>{
+        const d=p.data();
+        return {id:p.id,titulo:d.titulo||'',progreso:Math.round((d.progreso||0)*100)};
+      });
+      const pctGral=escuelas.length>0?Math.round(escuelas.reduce((s,e)=>s+e.progreso,0)/escuelas.length):0;
+      return {
+        id:uDoc.id,
+        nombre:u.display_name||((u.nombre||'')+' '+(u.apellido||'')).trim(),
+        cargo:u.cargo||'—',tienda:u.tienda||'—',email:u.email||'',estado:u.estado||'Activo',
+        pctGral,escuelas,programas
+      };
+    });
+    segData=(await Promise.all(promesas)).filter(Boolean);
+    const tiendas=[...new Set(segData.map(u=>u.tienda).filter(t=>t&&t!=='—'))].sort();
+    const cargos=[...new Set(segData.map(u=>u.cargo).filter(t=>t&&t!=='—'))].sort();
+    const selT=$('seg-filtro-tienda'),selC=$('seg-filtro-cargo');
+    if(selT) selT.innerHTML='<option value="">Todas las tiendas</option>'+tiendas.map(t=>`<option value="${t}">${t}</option>`).join('');
+    if(selC) selC.innerHTML='<option value="">Todos los cargos</option>'+cargos.map(c=>`<option value="${c}">${c}</option>`).join('');
+    renderEscuelas(segData);
+  } catch(err) {
+    console.error('Error seguimiento:',err);
+    if(cont) cont.innerHTML=`<div style="padding:2rem;text-align:center"><div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:6px">No se pudo cargar el progreso</div><div style="font-size:12px;color:var(--tm);margin-bottom:10px">${err.message}</div><button class="btn btn-o btn-sm" onclick="cargarSeguimiento()">Reintentar</button></div>`;
+  }
+}
+
 
 // ── UTILIDADES ──────────────────────────────────
 const COLORS = ['#1a56db','#7c3aed','#0d9f6e','#dc2626','#b45309','#0891b2','#9333ea','#be123c','#15803d','#c2410c'];
@@ -1008,6 +1192,7 @@ function show(id) {
   if (map[id] !== undefined) document.querySelectorAll('.ni')[map[id]]?.classList.add('active');
   if (id === 'planificacion') renderCalendario();
   if (id === 'admin') actualizarStatsAdmin();
+  if (id === 'seguimiento') cargarSeguimiento();
 }
 
 // ── CSV PARSER ──────────────────────────────────
@@ -1426,29 +1611,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </div></div>`;
   });
 
-  // Seguimiento (ejemplo)
-  const colabs=[
-    {name:'Ana García',role:'Cajera',a:true,b:true,c:false,p:60},
-    {name:'Roberto Silva',role:'Aux. Farmacia',a:true,b:true,c:true,p:100},
-    {name:'Patricia Ruiz',role:'Regente',a:false,b:true,c:false,p:40},
-    {name:'Miguel Torres',role:'Aux. Farmacia',a:true,b:true,c:true,p:100},
-    {name:'Carmen Flores',role:'Cajera',a:false,b:false,c:false,p:0},
-    {name:'José Martínez',role:'Aux. Farmacia',a:true,b:true,c:false,p:65},
-  ];
-  const tbody=$('colab-tbody');
-  if(tbody) colabs.forEach((c,i)=>{
-    const ok='<span class="pill pill-done">✓</span>', no='<span class="pill pill-red">✗</span>';
-    tbody.innerHTML+=`<tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:8px 1rem"><div style="display:flex;align-items:center;gap:8px">
-        <div style="width:26px;height:26px;border-radius:50%;background:${col(i)};color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center">${ini(c.name)}</div>
-        <div style="font-weight:600;color:var(--tp)">${c.name}</div></div></td>
-      <td style="padding:8px 1rem;color:var(--ts)">${c.role}</td>
-      <td style="padding:8px 1rem;text-align:center">${c.a?ok:no}</td>
-      <td style="padding:8px 1rem;text-align:center">${c.b?ok:no}</td>
-      <td style="padding:8px 1rem;text-align:center">${c.c?ok:no}</td>
-      <td style="padding:8px 1rem;text-align:center"><div style="font-weight:700;font-size:13px;color:${c.p>=80?'var(--green)':c.p>=50?'var(--amber)':'var(--red)'}">${c.p}%</div></td>
-    </tr>`;
-  });
+  // Seguimiento carga cuando se abre la sección
 
   // Buscador embajadores
   const si=document.querySelector('#pane-embajadores input[type="text"]');
