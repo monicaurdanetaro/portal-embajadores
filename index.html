@@ -980,10 +980,10 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
 // ═══════════════════════════════════════════════
 
 // ── CONFIGURACIÓN ───────────────────────────────
-const PROXY = 'https://corsproxy.io/?';
+const PROXY = 'https://script.google.com/macros/s/AKfycbxoyFFrXI3iudjWwMwxewoE48CFbvv5d_MUk6lsg182mKo2NyQwACUgBujN-t9DTydz/exec';
 const SHEETS = {
-  directorio: PROXY + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vSoI9Mf1H0KPffvYRkJpdSyWBJHxEaMQ0KpSZ4xU-0N96Ix_A1ttA_wwdecMiLq8tXxu3D-emuC2up2/pub?gid=0&single=true&output=csv'),
-  cursos:     PROXY + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vSoI9Mf1H0KPffvYRkJpdSyWBJHxEaMQ0KpSZ4xU-0N96Ix_A1ttA_wwdecMiLq8tXxu3D-emuC2up2/pub?gid=1532918966&single=true&output=csv'),
+  directorio: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSoI9Mf1H0KPffvYRkJpdSyWBJHxEaMQ0KpSZ4xU-0N96Ix_A1ttA_wwdecMiLq8tXxu3D-emuC2up2/pub?gid=0&single=true&output=csv',
+  cursos:     PROXY + '?gid=1532918966',
 };
 const ROL_USUARIO   = 'admin';
 const NOMBRE_USUARIO = 'Mónica Urdaneta';
