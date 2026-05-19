@@ -980,9 +980,9 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
 // ═══════════════════════════════════════════════
 
 // ── CONFIGURACIÓN ───────────────────────────────
-const PROXY = 'https://script.google.com/macros/s/AKfycbxoyFFrXI3iudjWwMwxewoE48CFbvv5d_MUk6lsg182mKo2NyQwACUgBujN-t9DTydz/exec';
+const PROXY = 'https://script.google.com/macros/s/AKfycbzohf86ROfB7-r2RqbT4a5rx8ediLOKVZFUch5Fc8milqHdcwqBnp-mjn36dHbd5Z50/exec';
 const SHEETS = {
-  directorio: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSoI9Mf1H0KPffvYRkJpdSyWBJHxEaMQ0KpSZ4xU-0N96Ix_A1ttA_wwdecMiLq8tXxu3D-emuC2up2/pub?gid=0&single=true&output=csv',
+  directorio: PROXY + '?gid=0',
   cursos:     PROXY + '?gid=1532918966',
 };
 const ROL_USUARIO   = 'admin';
@@ -1061,10 +1061,21 @@ function cPoblacion(c){ return get(c,'Población','POBLACION','Poblacion','pobla
 
 function parseFecha(str) {
   if (!str) return null;
-  const p = str.includes('/') ? str.split('/') : str.split('-');
-  if (p.length!==3) return null;
-  if (str.includes('/')) return new Date(+p[2], +p[1]-1, +p[0]);
-  return new Date(+p[0], +p[1]-1, +p[2]);
+  str = str.trim();
+  // Formato DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+    const [d,m,y] = str.split('/');
+    return new Date(+y, +m-1, +d);
+  }
+  // Formato YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y,m,d] = str.split('-');
+    return new Date(+y, +m-1, +d);
+  }
+  // Formato largo: "Thu May 28 2026 00:00:00 GMT-0400 ..."
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) return d;
+  return null;
 }
 function colorEsc(e) {
   if (e==='Comercial')  return '#1a56db';
