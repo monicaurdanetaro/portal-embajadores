@@ -650,9 +650,13 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
 
       <!-- Grid días de semana -->
       <div style="display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border)">
-        ${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map(d=>
-          `<div style="text-align:center;font-size:11px;font-weight:600;color:var(--tm);padding:6px 0;text-transform:uppercase;letter-spacing:.5px">${d}</div>`
-        ).join('')}
+        <div style="text-align:center;font-size:11px;font-weight:600;color:var(--tm);padding:6px 0;text-transform:uppercase;letter-spacing:.5px">Dom</div>
+        <div style="text-align:center;font-size:11px;font-weight:600;color:var(--tm);padding:6px 0;text-transform:uppercase;letter-spacing:.5px">Lun</div>
+        <div style="text-align:center;font-size:11px;font-weight:600;color:var(--tm);padding:6px 0;text-transform:uppercase;letter-spacing:.5px">Mar</div>
+        <div style="text-align:center;font-size:11px;font-weight:600;color:var(--tm);padding:6px 0;text-transform:uppercase;letter-spacing:.5px">Mié</div>
+        <div style="text-align:center;font-size:11px;font-weight:600;color:var(--tm);padding:6px 0;text-transform:uppercase;letter-spacing:.5px">Jue</div>
+        <div style="text-align:center;font-size:11px;font-weight:600;color:var(--tm);padding:6px 0;text-transform:uppercase;letter-spacing:.5px">Vie</div>
+        <div style="text-align:center;font-size:11px;font-weight:600;color:var(--tm);padding:6px 0;text-transform:uppercase;letter-spacing:.5px">Sáb</div>
       </div>
 
       <!-- Grid días del mes -->
@@ -971,85 +975,106 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
 </div><!-- /main -->
 
 <script>
-// ── COLORES Y UTILIDADES ──────────────────────────
-const colors=['#1a56db','#7c3aed','#0d9f6e','#dc2626','#b45309','#0891b2','#9333ea','#be123c','#15803d','#c2410c'];
-function col(i){return colors[i%colors.length]}
-function ini(n){return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+// ═══════════════════════════════════════════════
+// PORTAL EMBAJADORES — Script completo
+// ═══════════════════════════════════════════════
 
-// ── CONFIGURACIÓN ─────────────────────────────────
-const SHEET_ID = '1mYsnhSFcdgcAU-WRMzaIJQ3kWutZKdwwmhVRuIuYY4o';
+// ── CONFIGURACIÓN ───────────────────────────────
+const PROXY = 'https://corsproxy.io/?';
 const SHEETS = {
-  directorio: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSoI9Mf1H0KPffvYRkJpdSyWBJHxEaMQ0KpSZ4xU-0N96Ix_A1ttA_wwdecMiLq8tXxu3D-emuC2up2/pub?gid=0&single=true&output=csv',
-  cursos: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=1532918966`,
+  directorio: PROXY + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vSoI9Mf1H0KPffvYRkJpdSyWBJHxEaMQ0KpSZ4xU-0N96Ix_A1ttA_wwdecMiLq8tXxu3D-emuC2up2/pub?gid=0&single=true&output=csv'),
+  cursos:     PROXY + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vSoI9Mf1H0KPffvYRkJpdSyWBJHxEaMQ0KpSZ4xU-0N96Ix_A1ttA_wwdecMiLq8tXxu3D-emuC2up2/pub?gid=1532918966&single=true&output=csv'),
 };
-const ROL_USUARIO = 'admin';
+const ROL_USUARIO   = 'admin';
 const NOMBRE_USUARIO = 'Mónica Urdaneta';
 
-// ── SHOW / NAVEGACIÓN ─────────────────────────────
+// ── UTILIDADES ──────────────────────────────────
+const COLORS = ['#1a56db','#7c3aed','#0d9f6e','#dc2626','#b45309','#0891b2','#9333ea','#be123c','#15803d','#c2410c'];
+const MESES  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_C= ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+function col(i)  { return COLORS[i % COLORS.length]; }
+function ini(n)  { return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+function $(id)   { return document.getElementById(id); }
+function html(id, h) { const el=$(id); if(el) el.innerHTML=h; }
+
+// ── NAVEGACIÓN ──────────────────────────────────
 function show(id) {
   document.querySelectorAll('.pane').forEach(p => p.classList.remove('show'));
-  const pane = document.getElementById('pane-' + id);
+  const pane = $('pane-'+id);
   if (pane) pane.classList.add('show');
   document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
   const map = {home:0,seguimiento:1,planificacion:2,novedades:3,foro:4,chat:5,embajadores:6};
   if (map[id] !== undefined) document.querySelectorAll('.ni')[map[id]]?.classList.add('active');
-  if (id === 'admin' && todosEmbajadores.length) actualizarStatsAdmin();
+  if (id === 'planificacion') renderCalendario();
+  if (id === 'admin') actualizarStatsAdmin();
 }
 
-function actualizarStatsAdmin() {
-  const activos = todosEmbajadores.filter(e => get(e,'ESTATUS').toLowerCase().includes('activo')).length;
-  const paises  = new Set(todosEmbajadores.map(e => get(e,'PAÍS','PAIS','PAAS'))).size;
-  const s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  s('admin-total',    todosEmbajadores.length);
-  s('admin-activos',  activos);
-  s('admin-inactivos',todosEmbajadores.length - activos);
-  s('admin-paises',   paises);
+// ── CSV PARSER ──────────────────────────────────
+function fixStr(s) {
+  return (s||'')
+    .replace(/Ã©/g,'é').replace(/Ã‰/g,'É').replace(/Ã¡/g,'á').replace(/Ã\x81/g,'Á')
+    .replace(/Ã­/g,'í').replace(/Ã\x8D/g,'Í').replace(/Ã³/g,'ó').replace(/Ã"/g,'Ó')
+    .replace(/Ãº/g,'ú').replace(/Ãš/g,'Ú').replace(/Ã±/g,'ñ').replace(/Ã'/g,'Ñ')
+    .trim();
 }
-
-// ── CSV PARSER ────────────────────────────────────
-function fixEncoding(str) {
-  return str
-    .replace(/CÃ©DULA|CÃ‰DULA/gi, 'CÉDULA')
-    .replace(/Ã‰|Ã©/g,'É').replace(/Ã\x81|Ã¡/g,'Á')
-    .replace(/Ã\x8D|Ã­/g,'Í').replace(/Ã"|\u00c3\u00b3/g,'Ó')
-    .replace(/Ãš|\u00c3\u00ba/g,'Ú').replace(/Ã'|\u00c3\u0091/g,'Ñ')
-    .replace(/PAAS\b/g,'PAÍS').replace(/AREA\b/g,'ÁREA')
-    .replace(/CEDULA\b/g,'CÉDULA').trim();
-}
-function normalizeKey(h) {
-  return h.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9 ]/g,'').trim();
+function normKey(h) {
+  return fixStr(h).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9 ]/g,'').trim();
 }
 function parseCSV(text) {
   const lines = text.trim().split('\n');
-  const rawHeaders = lines[0].split(',').map(h => fixEncoding(h.trim().replace(/^"|"$/g,'')));
+  const heads = lines[0].split(',').map(h => fixStr(h.replace(/^"|"$/g,'')));
+  const norms = heads.map(normKey);
   return lines.slice(1).map(line => {
-    const vals = []; let cur = '', inQ = false;
-    for (let c of line) {
+    const vals=[]; let cur='', inQ=false;
+    for (const c of line) {
       if (c==='"') { inQ=!inQ; }
       else if (c===',' && !inQ) { vals.push(cur.trim()); cur=''; }
-      else cur += c;
+      else cur+=c;
     }
     vals.push(cur.trim());
-    const obj = {};
-    rawHeaders.forEach((h,i) => {
-      const val = (vals[i]||'').replace(/^"|"$/g,'');
-      obj[h] = val;
-      obj[normalizeKey(h)] = val;
+    const obj={};
+    heads.forEach((h,i) => {
+      const v=(vals[i]||'').replace(/^"|"$/g,'');
+      obj[h]=v; obj[norms[i]]=v;
     });
     return obj;
-  }).filter(r => (r['NOMBRE Y APELLIDO']||r['NOMBRE']||'').trim() !== '');
+  }).filter(r => {
+    const n = r['Nombre y Apellido']||r['NOMBRE Y APELLIDO']||r['Nombre del curso']||r['NOMBRE DEL CURSO']||r['Nombre']||Object.values(r)[0]||'';
+    return n.trim()!=='';
+  });
 }
 function get(row, ...keys) {
   for (const k of keys) {
     if (row[k]) return row[k];
-    const n = normalizeKey(k);
+    const n = normKey(k);
     if (row[n]) return row[n];
   }
   return '';
 }
 
-// ── NOVEDADES ─────────────────────────────────────
-let novedadesData = JSON.parse(localStorage.getItem('novedades') || '[]');
+// ── CAMPOS DE CURSOS ────────────────────────────
+function cNombre(c)   { return get(c,'Nombre del curso','NOMBRE DEL CURSO','Nombre','NOMBRE') || Object.values(c)[0] || '—'; }
+function cFecha(c)    { return get(c,'Fecha','FECHA'); }
+function cEscuela(c)  { return get(c,'Escuela','ESCUELA').trim(); }
+function cPoblacion(c){ return get(c,'Población','POBLACION','Poblacion','población'); }
+
+function parseFecha(str) {
+  if (!str) return null;
+  const p = str.includes('/') ? str.split('/') : str.split('-');
+  if (p.length!==3) return null;
+  if (str.includes('/')) return new Date(+p[2], +p[1]-1, +p[0]);
+  return new Date(+p[0], +p[1]-1, +p[2]);
+}
+function colorEsc(e) {
+  if (e==='Comercial')  return '#1a56db';
+  if (e==='Excelencia') return '#0d9f6e';
+  if (e==='Servicio')   return '#b45309';
+  return '#888780';
+}
+
+// ── NOVEDADES ───────────────────────────────────
+let novedadesData = JSON.parse(localStorage.getItem('novedades')||'[]');
 if (!novedadesData.length) {
   novedadesData = [
     {id:1,titulo:'Nueva ruta de aprendizaje disponible en LMS',contenido:'El equipo de Capacitación ha publicado la nueva ruta "Excelencia en Servicio al Cliente". Obligatoria antes del 30 de junio.',tipo:'anuncio',autor:'Mónica Urdaneta',fecha:'2025-05-15',activo:true},
@@ -1059,315 +1084,162 @@ if (!novedadesData.length) {
 function guardarNovedades() { localStorage.setItem('novedades', JSON.stringify(novedadesData)); }
 
 function renderNovedades() {
-  const tipoStyle = {
+  const TS = {
     anuncio:     {pill:'pill-new',  bg:'var(--blue-bg)',  ic:'var(--blue)',  label:'Anuncio'},
     resultado:   {pill:'pill-done', bg:'var(--green-bg)', ic:'var(--green)', label:'Resultado'},
     recordatorio:{pill:'pill-live', bg:'var(--amber-bg)', ic:'var(--amber)', label:'Recordatorio'},
   };
-  const activas = novedadesData.filter(n => n.activo);
-  const html = !activas.length
+  const activas = novedadesData.filter(n=>n.activo);
+  const h = !activas.length
     ? `<div style="text-align:center;padding:2rem;color:var(--tm);font-size:13px">No hay novedades publicadas aún.</div>`
     : activas.map(n => {
-        const t = tipoStyle[n.tipo] || tipoStyle.anuncio;
-        return `<div class="card" style="margin-bottom:.8rem">
-          <div class="card-body">
-            <div style="display:flex;align-items:flex-start;gap:12px">
-              <div style="width:38px;height:38px;background:${t.bg};border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${t.ic}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        const t = TS[n.tipo]||TS.anuncio;
+        return `<div class="card" style="margin-bottom:.8rem"><div class="card-body">
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="width:38px;height:38px;background:${t.bg};border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${t.ic}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+                <span class="pill ${t.pill}">${t.label}</span>
+                <span style="font-size:11px;color:var(--tm)">${n.fecha} · ${n.autor}</span>
+                ${ROL_USUARIO==='admin'?`<button onclick="eliminarNovedad(${n.id})" style="margin-left:auto;font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;font-family:var(--fb)">Eliminar</button>`:''}
               </div>
-              <div style="flex:1">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
-                  <span class="pill ${t.pill}">${t.label}</span>
-                  <span style="font-size:11px;color:var(--tm)">${n.fecha} · ${n.autor}</span>
-                  ${ROL_USUARIO==='admin'?`<button onclick="eliminarNovedad(${n.id})" style="margin-left:auto;font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;font-family:var(--fb)">Eliminar</button>`:''}
-                </div>
-                <div style="font-size:14px;font-weight:600;color:var(--tp);margin-bottom:5px">${n.titulo}</div>
-                <div style="font-size:12.5px;color:var(--ts);line-height:1.6">${n.contenido}</div>
-              </div>
+              <div style="font-size:14px;font-weight:600;color:var(--tp);margin-bottom:5px">${n.titulo}</div>
+              <div style="font-size:12.5px;color:var(--ts);line-height:1.6">${n.contenido}</div>
             </div>
           </div>
-        </div>`;
+        </div></div>`;
       }).join('');
-  ['novedades-list','novedades-list-admin'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = html;
-  });
+  ['novedades-list','novedades-list-admin'].forEach(id => html(id, h));
 }
 
 function eliminarNovedad(id) {
   if (!confirm('¿Eliminar esta novedad?')) return;
-  novedadesData = novedadesData.filter(n => n.id !== id);
-  guardarNovedades();
-  renderNovedades();
+  novedadesData = novedadesData.filter(n=>n.id!==id);
+  guardarNovedades(); renderNovedades();
 }
 
-// ── CURSOS ────────────────────────────────────────
+// ── CURSOS ──────────────────────────────────────
 let cursosData = [];
+
 function renderCursos(lista, targetId='cursos-list') {
-  const cont = document.getElementById(targetId);
+  const cont = $(targetId);
   if (!cont) return;
   if (!lista.length) { cont.innerHTML=`<div style="padding:.8rem;color:var(--tm);font-size:13px">No hay cursos cargados.</div>`; return; }
   cont.innerHTML = lista.map((c,i) => {
-    const nombre  = get(c,'NOMBRE','TITULO','nombre','titulo') || Object.values(c)[0] || '—';
-    const tipo    = get(c,'TIPO','tipo') || 'Curso';
-    const duracion= get(c,'DURACIÓN','DURACION','duracion') || '';
-    const oblig   = (get(c,'OBLIGATORIO','obligatorio')||'').toLowerCase().startsWith('s');
-    const fecha   = get(c,'FECHA VENCIMIENTO','VENCIMIENTO','fecha') || '';
+    const nombre = cNombre(c), esc=cEscuela(c), pob=cPoblacion(c), fecha=get(c,'Fecha','FECHA');
+    const color  = colorEsc(esc);
     return `<div class="prog-row" style="${i===lista.length-1?'border-bottom:none':''}">
-      <div class="prog-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+      <div class="prog-icon" style="background:${color}15"><svg viewBox="0 0 24 24" style="stroke:${color}"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
       <div class="prog-info">
         <div class="prog-name">${nombre}</div>
-        <div class="prog-meta">${tipo}${duracion?' · '+duracion+' hrs':''}${fecha?' · Vence: '+fecha:''}</div>
+        <div class="prog-meta">${esc}${pob?' · '+pob:''}${fecha?' · '+fecha:''}</div>
       </div>
-      ${oblig?'<span class="pill pill-red" style="flex-shrink:0">Obligatorio</span>':'<span class="pill pill-pend" style="flex-shrink:0">Opcional</span>'}
     </div>`;
   }).join('');
 }
 
 async function cargarCursos() {
-  ['cursos-list','cursos-list-admin'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:.8rem;color:var(--tm);font-size:13px"><div style="width:14px;height:14px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>Cargando cursos...</div>`;
-  });
+  ['cursos-list','cursos-list-admin'].forEach(id => html(id,
+    `<div style="display:flex;align-items:center;gap:8px;padding:.8rem;color:var(--tm);font-size:13px"><div style="width:14px;height:14px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>Cargando...</div>`
+  ));
   try {
-    const res = await fetch(SHEETS.cursos);
+    const res  = await fetch(SHEETS.cursos);
     const text = await res.text();
     cursosData = parseCSV(text);
     renderCursos(cursosData,'cursos-list');
     renderCursos(cursosData,'cursos-list-admin');
     renderCalendario();
   } catch(e) {
-    ['cursos-list','cursos-list-admin'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = `<div style="padding:.8rem;font-size:13px;color:var(--red)">No se pudo cargar cursos.</div>`;
-    });
+    ['cursos-list','cursos-list-admin'].forEach(id => html(id,`<div style="padding:.8rem;font-size:13px;color:var(--red)">No se pudo cargar cursos.</div>`));
   }
 }
 
-// ── EMBAJADORES ───────────────────────────────────
-let todosEmbajadores = [];
-let filtroActivo = 'todos';
-let busqueda = '';
-
-function renderGrid(lista) {
-  const grid = document.getElementById('emb-grid');
-  const counter = document.getElementById('emb-counter');
-  if (!lista.length) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--tm);font-size:13px">No se encontraron embajadores.</div>`;
-    if (counter) counter.textContent = '0 embajadores';
-    return;
-  }
-  if (counter) counter.textContent = `${lista.length} embajador${lista.length!==1?'es':''}`;
-  grid.innerHTML = lista.map((e,i) => {
-    const nombre  = get(e,'NOMBRE Y APELLIDO','NOMBRE');
-    const tienda  = get(e,'TIENDA') || '—';
-    const cargo   = get(e,'CARGO') || '—';
-    const area    = get(e,'ÁREA','AREA') || '—';
-    const estatus = get(e,'ESTATUS') || 'Activo';
-    const pais    = get(e,'PAÍS','PAIS','PAAS') || '—';
-    const fecha   = get(e,'FECHA DE INGRESO AL ROL','FECHA') || '';
-    const activo  = estatus.toLowerCase().includes('activo');
-    return `<div class="emb-card" title="Ingreso al rol: ${fecha}">
-      <div class="emb-av" style="background:${col(i)}">${ini(nombre)}</div>
-      <div class="emb-name">${nombre}</div>
-      <div class="emb-store">${tienda} · ${pais}</div>
-      <div class="emb-role">${cargo}</div>
-      <div style="font-size:11px;color:var(--tm);margin-bottom:4px">${area}</div>
-      <div class="emb-tag">${activo
-        ?'<span class="pill pill-done">Activo</span>'
-        :'<span class="pill pill-red">Inactivo</span>'}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function aplicarFiltros() {
-  let lista = [...todosEmbajadores];
-  if (filtroActivo==='activos')   lista=lista.filter(e=>get(e,'ESTATUS').toLowerCase().includes('activo'));
-  if (filtroActivo==='inactivos') lista=lista.filter(e=>!get(e,'ESTATUS').toLowerCase().includes('activo'));
-  if (filtroActivo==='venezuela') lista=lista.filter(e=>get(e,'PAÍS','PAIS','PAAS').toLowerCase().includes('ven'));
-  if (filtroActivo==='colombia')  lista=lista.filter(e=>get(e,'PAÍS','PAIS','PAAS').toLowerCase().includes('col'));
-  if (busqueda.trim()) {
-    const q = busqueda.toLowerCase();
-    lista = lista.filter(e =>
-      get(e,'NOMBRE Y APELLIDO','NOMBRE').toLowerCase().includes(q) ||
-      get(e,'TIENDA').toLowerCase().includes(q) ||
-      get(e,'CARGO').toLowerCase().includes(q) ||
-      get(e,'CÉDULA','CEDULA').includes(q)
-    );
-  }
-  renderGrid(lista);
-}
-
-async function cargarEmbajadores() {
-  const grid = document.getElementById('emb-grid');
-  const counter = document.getElementById('emb-counter');
-  if (grid) grid.innerHTML = `<div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:10px;padding:2rem;color:var(--tm);font-size:13px"><div style="width:16px;height:16px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>Cargando directorio...</div>`;
-  try {
-    const res = await fetch(SHEETS.directorio);
-    if (!res.ok) throw new Error('HTTP '+res.status);
-    const text = await res.text();
-    todosEmbajadores = parseCSV(text);
-    aplicarFiltros();
-    actualizarStatsAdmin();
-  } catch(err) {
-    if (grid) grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem">
-      <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:6px">No se pudo cargar el directorio</div>
-      <div style="font-size:12px;color:var(--tm);margin-bottom:12px">Verifica que el Sheets esté publicado como CSV.</div>
-      <button class="btn btn-o btn-sm" onclick="cargarEmbajadores()">Reintentar</button>
-    </div>`;
-  }
-}
-
-// ── EXPORTAR ──────────────────────────────────────
-function exportarLista() {
-  if (!todosEmbajadores.length) { alert('No hay datos cargados todavía.'); return; }
-  const cols = ['NOMBRE Y APELLIDO','TIENDA','CARGO','ÁREA','ESTATUS','PAÍS','CÉDULA','FECHA DE INGRESO AL ROL'];
-  const filas = [cols, ...todosEmbajadores.map(e => cols.map(c => get(e,c)||''))];
-  const ws = XLSX.utils.aoa_to_sheet(filas);
-  // Ancho de columnas
-  ws['!cols'] = [22,20,22,14,10,12,12,22].map(w=>({wch:w}));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Embajadores');
-  XLSX.writeFile(wb, `embajadores_${new Date().toISOString().split('T')[0]}.xlsx`);
-}
-
-// ── FORO (datos ejemplo) ───────────────────────────
-const foroPosts=[
-  {author:'María González',store:'T-012',title:'¿Cómo manejan la baja asistencia a talleres virtuales?',preview:'Tenemos dificultades con la asistencia. ¿Alguno tiene estrategias?',replies:14,likes:8,time:'Hace 2h',col:'#0d9f6e'},
-  {author:'Luis Ramírez',store:'T-023',title:'Comparto mi plantilla de seguimiento semanal',preview:'Diseñé una plantilla para hacer seguimiento a las capacitaciones de mi tienda...',replies:22,likes:31,time:'Hace 5h',col:'#1a56db'},
-  {author:'Sofía Torres',store:'T-067',title:'¿Han tenido problemas con el acceso al LMS?',preview:'Desde ayer varios colaboradores no pueden ingresar a la plataforma...',replies:9,likes:4,time:'Ayer',col:'#7c3aed'},
-  {author:'Ana Pérez',store:'Equipo Cap.',title:'📢 Nueva funcionalidad disponible en el portal',preview:'Ya pueden subir los informes directamente desde el portal...',replies:18,likes:25,time:'Ayer',col:'#b45309'},
-];
-
-// ── CALENDARIO ────────────────────────────────────
-const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const MESES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-let calMes = new Date().getMonth();
+// ── CALENDARIO ──────────────────────────────────
+let calMes  = new Date().getMonth();
 let calAnio = new Date().getFullYear();
-let calFiltroEscuela = 'todos';
-
-function parseFecha(str) {
-  if (!str) return null;
-  // Soporta DD/MM/YYYY y YYYY-MM-DD
-  const partes = str.includes('/') ? str.split('/') : str.split('-');
-  if (partes.length !== 3) return null;
-  if (str.includes('/')) {
-    const [d, m, a] = partes;
-    return new Date(parseInt(a), parseInt(m)-1, parseInt(d));
-  } else {
-    const [a, m, d] = partes;
-    return new Date(parseInt(a), parseInt(m)-1, parseInt(d));
-  }
-}
-
-function colorEscuela(escuela) {
-  const e = (escuela||'').trim();
-  if (e === 'Comercial')  return '#1a56db';
-  if (e === 'Excelencia') return '#0d9f6e';
-  if (e === 'Servicio')   return '#b45309';
-  return '#888780';
-}
-
-function cursosDelMes(mes, anio) {
-  return cursosData.filter(c => {
-    const f = parseFecha(c['Fecha'] || c['FECHA'] || '');
-    if (!f) return false;
-    if (calFiltroEscuela !== 'todos' && (c['Escuela']||c['ESCUELA']||'').trim() !== calFiltroEscuela) return false;
-    return f.getMonth() === mes && f.getFullYear() === anio;
-  });
-}
+let calFiltroEsc = 'todos';
 
 function renderCalendario() {
-  const titulo = document.getElementById('cal-titulo');
-  const grid   = document.getElementById('cal-grid');
-  const lista  = document.getElementById('cal-lista');
-  const listaTitulo = document.getElementById('cal-lista-titulo');
-  if (!titulo || !grid) return;
+  const tituloEl = $('cal-titulo');
+  const gridEl   = $('cal-grid');
+  if (!tituloEl || !gridEl) return;
 
-  titulo.textContent = `${MESES[calMes]} ${calAnio}`;
-  if (listaTitulo) listaTitulo.textContent = `Cursos en ${MESES[calMes]} ${calAnio}`;
+  tituloEl.textContent = MESES[calMes]+' '+calAnio;
+  const listaTit = $('cal-lista-titulo');
+  if (listaTit) listaTit.textContent = 'Cursos en '+MESES[calMes]+' '+calAnio;
 
-  const hoy = new Date();
-  const primerDia = new Date(calAnio, calMes, 1).getDay();
-  const diasEnMes = new Date(calAnio, calMes+1, 0).getDate();
-  const diasAnterior = new Date(calAnio, calMes, 0).getDate();
+  const hoy      = new Date();
+  const primerDia= new Date(calAnio, calMes, 1).getDay();
+  const diasMes  = new Date(calAnio, calMes+1, 0).getDate();
+  const diasPrev = new Date(calAnio, calMes, 0).getDate();
 
-  // Agrupar cursos por día
-  const cursosPorDia = {};
+  // Agrupar por día
+  const porDia = {};
   cursosData.forEach(c => {
-    const f = parseFecha(c['Fecha'] || c['FECHA'] || '');
-    if (!f) return;
-    if (calFiltroEscuela !== 'todos' && (c['Escuela']||c['ESCUELA']||'').trim() !== calFiltroEscuela) return;
-    if (f.getMonth() === calMes && f.getFullYear() === calAnio) {
-      const key = f.getDate();
-      if (!cursosPorDia[key]) cursosPorDia[key] = [];
-      cursosPorDia[key].push(c);
-    }
+    const f = parseFecha(cFecha(c));
+    if (!f || f.getMonth()!==calMes || f.getFullYear()!==calAnio) return;
+    if (calFiltroEsc!=='todos' && cEscuela(c)!==calFiltroEsc) return;
+    const d = f.getDate();
+    if (!porDia[d]) porDia[d]=[];
+    porDia[d].push(c);
   });
 
-  let html = '';
-  // Días del mes anterior
-  for (let i = primerDia - 1; i >= 0; i--) {
-    html += `<div class="cal-day other-month"><div class="cal-num" style="color:var(--tm)">${diasAnterior - i}</div></div>`;
-  }
-  // Días del mes actual
-  for (let d = 1; d <= diasEnMes; d++) {
-    const esHoy = d === hoy.getDate() && calMes === hoy.getMonth() && calAnio === hoy.getFullYear();
-    const eventos = cursosPorDia[d] || [];
-    const tieneEventos = eventos.length > 0;
-    const maxVisible = 2;
-    const eventosHTML = eventos.slice(0, maxVisible).map(c => {
-      const esc = (c['Escuela']||c['ESCUELA']||'otro').trim();
-      const nombre = c['Nombre del curso']||c['NOMBRE DEL CURSO']||c['Nombre']||'Curso';
-      return `<div class="cal-event ${esc}" title="${nombre}·${c['Población']||''}">${nombre}</div>`;
+  let g = '';
+  // Días mes anterior
+  for (let i=primerDia-1; i>=0; i--)
+    g += `<div class="cal-day other-month"><div class="cal-num" style="color:var(--tm)">${diasPrev-i}</div></div>`;
+  // Días mes actual
+  for (let d=1; d<=diasMes; d++) {
+    const esHoy = d===hoy.getDate() && calMes===hoy.getMonth() && calAnio===hoy.getFullYear();
+    const evs   = porDia[d]||[];
+    const chips = evs.slice(0,2).map(c => {
+      const e = cEscuela(c)||'otro';
+      return `<div class="cal-event ${e}" title="${cNombre(c)}">${cNombre(c)}</div>`;
     }).join('');
-    const masHTML = eventos.length > maxVisible
-      ? `<div class="cal-more">+${eventos.length - maxVisible} más</div>` : '';
-    html += `<div class="cal-day${esHoy?' today':''}${tieneEventos?' has-events':''}" onclick="${tieneEventos?`mostrarDia(${d})`:''}">
-      <div class="cal-num">${d}</div>
-      ${eventosHTML}${masHTML}
+    const mas = evs.length>2 ? `<div class="cal-more">+${evs.length-2} más</div>` : '';
+    g += `<div class="cal-day${esHoy?' today':''}${evs.length?' has-events':''}" ${evs.length?`onclick="mostrarDia(${d})"`:''}>
+      <div class="cal-num">${d}</div>${chips}${mas}
     </div>`;
   }
-  // Rellenar días del siguiente mes
-  const totalCeldas = Math.ceil((primerDia + diasEnMes) / 7) * 7;
-  for (let i = 1; i <= totalCeldas - primerDia - diasEnMes; i++) {
-    html += `<div class="cal-day other-month"><div class="cal-num" style="color:var(--tm)">${i}</div></div>`;
-  }
-  grid.innerHTML = html;
+  // Relleno siguiente mes
+  const total = Math.ceil((primerDia+diasMes)/7)*7;
+  for (let i=1; i<=total-primerDia-diasMes; i++)
+    g += `<div class="cal-day other-month"><div class="cal-num" style="color:var(--tm)">${i}</div></div>`;
+  gridEl.innerHTML = g;
 
-  // Lista de cursos del mes
-  const del_mes = cursosDelMes(calMes, calAnio).sort((a,b) => {
-    const fa = parseFecha(a['Fecha']||a['FECHA']||'');
-    const fb = parseFecha(b['Fecha']||b['FECHA']||'');
-    return (fa||0) - (fb||0);
-  });
+  // Lista del mes
+  const delMes = cursosData.filter(c => {
+    const f=parseFecha(cFecha(c));
+    if (!f||f.getMonth()!==calMes||f.getFullYear()!==calAnio) return false;
+    return calFiltroEsc==='todos' || cEscuela(c)===calFiltroEsc;
+  }).sort((a,b) => parseFecha(cFecha(a))-parseFecha(cFecha(b)));
 
-  if (!lista) return;
-  if (!del_mes.length) {
-    lista.innerHTML = `<div style="padding:1rem;text-align:center;color:var(--tm);font-size:13px">No hay cursos programados para este mes.</div>`;
+  const listaEl = $('cal-lista');
+  if (!listaEl) return;
+  if (!delMes.length) {
+    listaEl.innerHTML=`<div style="padding:1rem;text-align:center;color:var(--tm);font-size:13px">No hay cursos programados para este mes.</div>`;
     return;
   }
-  lista.innerHTML = del_mes.map((c, i) => {
-    const nombre  = c['Nombre del curso']||c['NOMBRE DEL CURSO']||c['Nombre']||'—';
-    const fecha   = parseFecha(c['Fecha']||c['FECHA']||'');
-    const escuela = (c['Escuela']||c['ESCUELA']||'—').trim();
-    const pobla   = c['Población']||c['POBLACION']||'—';
-    const color   = colorEscuela(escuela);
-    const esHoy2  = fecha && fecha.toDateString() === new Date().toDateString();
-    const esPasado= fecha && fecha < new Date() && !esHoy2;
-    return `<div class="ev-row" style="${i===del_mes.length-1?'border-bottom:none':''}">
-      <div class="ev-date" style="background:${color}15;border:1px solid ${color}30">
+  listaEl.innerHTML = delMes.map((c,i) => {
+    const nombre = cNombre(c), esc=cEscuela(c)||'—', pob=cPoblacion(c)||'—';
+    const fecha  = parseFecha(cFecha(c));
+    const color  = colorEsc(esc);
+    const esHoy2 = fecha && fecha.toDateString()===hoy.toDateString();
+    const pasado = fecha && fecha<hoy && !esHoy2;
+    return `<div class="ev-row" style="${i===delMes.length-1?'border-bottom:none':''}">
+      <div class="ev-date" style="background:${color}22;border:1px solid ${color}44">
         <div class="ev-day" style="color:${color}">${fecha?fecha.getDate():'—'}</div>
-        <div class="ev-mon" style="color:${color}">${fecha?MESES_CORTO[fecha.getMonth()]:'—'}</div>
+        <div class="ev-mon" style="color:${color}">${fecha?MESES_C[fecha.getMonth()]:'—'}</div>
       </div>
       <div class="ev-info">
-        <div class="ev-ttl" style="${esPasado?'color:var(--tm);text-decoration:line-through':''}">${nombre}</div>
+        <div class="ev-ttl" style="${pasado?'color:var(--tm);text-decoration:line-through':''}">${nombre}</div>
         <div class="ev-sub">
           <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-right:4px;vertical-align:middle"></span>
-          ${escuela} · ${pobla}
+          ${esc} · ${pob}
           ${esHoy2?'<span class="pill pill-live" style="margin-left:6px">Hoy</span>':''}
-          ${esPasado?'<span class="pill pill-pend" style="margin-left:6px">Pasado</span>':''}
+          ${pasado?'<span class="pill pill-pend" style="margin-left:6px">Pasado</span>':''}
         </div>
       </div>
     </div>`;
@@ -1375,86 +1247,175 @@ function renderCalendario() {
 }
 
 function mostrarDia(dia) {
-  const eventos = cursosData.filter(c => {
-    const f = parseFecha(c['Fecha']||c['FECHA']||'');
+  const evs = cursosData.filter(c => {
+    const f=parseFecha(cFecha(c));
     return f && f.getDate()===dia && f.getMonth()===calMes && f.getFullYear()===calAnio;
   });
-  if (!eventos.length) return;
-  const lista = document.getElementById('cal-lista');
-  const listaTitulo = document.getElementById('cal-lista-titulo');
-  if (listaTitulo) listaTitulo.textContent = `Cursos del ${dia} de ${MESES[calMes]}`;
-  if (lista) lista.innerHTML = eventos.map((c,i) => {
-    const nombre  = c['Nombre del curso']||c['Nombre']||'—';
-    const escuela = (c['Escuela']||'—').trim();
-    const pobla   = c['Población']||'—';
-    const color   = colorEscuela(escuela);
-    return `<div class="ev-row" style="${i===eventos.length-1?'border-bottom:none':''}">
-      <div class="ev-date" style="background:${color}15;border:1px solid ${color}30">
+  if (!evs.length) return;
+  const listaTit = $('cal-lista-titulo');
+  if (listaTit) listaTit.textContent = 'Cursos del '+dia+' de '+MESES[calMes];
+  const listaEl = $('cal-lista');
+  if (!listaEl) return;
+  listaEl.innerHTML = evs.map((c,i) => {
+    const nombre=cNombre(c), esc=cEscuela(c)||'—', pob=cPoblacion(c)||'—';
+    const color=colorEsc(esc);
+    return `<div class="ev-row" style="${i===evs.length-1?'border-bottom:none':''}">
+      <div class="ev-date" style="background:${color}22;border:1px solid ${color}44">
         <div class="ev-day" style="color:${color}">${dia}</div>
-        <div class="ev-mon" style="color:${color}">${MESES_CORTO[calMes]}</div>
+        <div class="ev-mon" style="color:${color}">${MESES_C[calMes]}</div>
       </div>
       <div class="ev-info">
         <div class="ev-ttl">${nombre}</div>
-        <div class="ev-sub"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-right:4px;vertical-align:middle"></span>${escuela} · ${pobla}</div>
+        <div class="ev-sub"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-right:4px;vertical-align:middle"></span>${esc} · ${pob}</div>
       </div>
     </div>`;
   }).join('');
-  lista.scrollIntoView({behavior:'smooth',block:'nearest'});
+  listaEl.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
 function cambiarMes(delta) {
-  calMes += delta;
-  if (calMes > 11) { calMes=0; calAnio++; }
-  if (calMes < 0)  { calMes=11; calAnio--; }
+  calMes+=delta;
+  if (calMes>11){calMes=0;calAnio++;}
+  if (calMes<0) {calMes=11;calAnio--;}
   renderCalendario();
 }
 
 function filtrarCalendario(btn) {
-  document.querySelectorAll('.cal-filter').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.cal-filter').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  calFiltroEscuela = btn.dataset.escuela;
+  calFiltroEsc = btn.dataset.escuela;
   renderCalendario();
 }
 
-// ── DOM READY ─────────────────────────────────────
+// ── EMBAJADORES ─────────────────────────────────
+let todosEmbajadores=[], filtroActivo='todos', busqueda='';
+
+function renderGrid(lista) {
+  const grid=$('emb-grid'), counter=$('emb-counter');
+  if (!lista.length) {
+    if(grid) grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--tm);font-size:13px">No se encontraron embajadores.</div>`;
+    if(counter) counter.textContent='0 embajadores'; return;
+  }
+  if(counter) counter.textContent=lista.length+' embajador'+(lista.length!==1?'es':'');
+  grid.innerHTML = lista.map((e,i) => {
+    const nombre=get(e,'NOMBRE Y APELLIDO','NOMBRE'), tienda=get(e,'TIENDA')||'—';
+    const cargo=get(e,'CARGO')||'—', area=get(e,'ÁREA','AREA')||'—';
+    const estatus=get(e,'ESTATUS')||'Activo', pais=get(e,'PAÍS','PAIS','PAAS')||'—';
+    const fecha=get(e,'FECHA DE INGRESO AL ROL','FECHA')||'';
+    const activo=estatus.toLowerCase().includes('activo');
+    return `<div class="emb-card" title="Ingreso: ${fecha}">
+      <div class="emb-av" style="background:${col(i)}">${ini(nombre)}</div>
+      <div class="emb-name">${nombre}</div>
+      <div class="emb-store">${tienda} · ${pais}</div>
+      <div class="emb-role">${cargo}</div>
+      <div style="font-size:11px;color:var(--tm);margin-bottom:4px">${area}</div>
+      <div class="emb-tag">${activo?'<span class="pill pill-done">Activo</span>':'<span class="pill pill-red">Inactivo</span>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function aplicarFiltros() {
+  let lista=[...todosEmbajadores];
+  if(filtroActivo==='activos')   lista=lista.filter(e=>get(e,'ESTATUS').toLowerCase().includes('activo'));
+  if(filtroActivo==='inactivos') lista=lista.filter(e=>!get(e,'ESTATUS').toLowerCase().includes('activo'));
+  if(filtroActivo==='venezuela') lista=lista.filter(e=>get(e,'PAÍS','PAIS','PAAS').toLowerCase().includes('ven'));
+  if(filtroActivo==='colombia')  lista=lista.filter(e=>get(e,'PAÍS','PAIS','PAAS').toLowerCase().includes('col'));
+  if(busqueda.trim()) {
+    const q=busqueda.toLowerCase();
+    lista=lista.filter(e=>
+      get(e,'NOMBRE Y APELLIDO','NOMBRE').toLowerCase().includes(q)||
+      get(e,'TIENDA').toLowerCase().includes(q)||
+      get(e,'CARGO').toLowerCase().includes(q)||
+      get(e,'CÉDULA','CEDULA').includes(q)
+    );
+  }
+  renderGrid(lista);
+}
+
+function actualizarStatsAdmin() {
+  const activos=todosEmbajadores.filter(e=>get(e,'ESTATUS').toLowerCase().includes('activo')).length;
+  const paises=new Set(todosEmbajadores.map(e=>get(e,'PAÍS','PAIS','PAAS'))).size;
+  const s=(id,v)=>{const el=$(id);if(el)el.textContent=v;};
+  s('admin-total',todosEmbajadores.length);
+  s('admin-activos',activos);
+  s('admin-inactivos',todosEmbajadores.length-activos);
+  s('admin-paises',paises);
+}
+
+async function cargarEmbajadores() {
+  const grid=$('emb-grid');
+  if(grid) grid.innerHTML=`<div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:10px;padding:2rem;color:var(--tm);font-size:13px"><div style="width:16px;height:16px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>Cargando directorio...</div>`;
+  try {
+    const res=await fetch(SHEETS.directorio);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const text=await res.text();
+    console.log('CSV Directorio primeras 200 chars:', text.slice(0,200));
+    todosEmbajadores=parseCSV(text);
+    console.log('Embajadores parseados:', todosEmbajadores.length, todosEmbajadores[0]);
+    aplicarFiltros();
+    actualizarStatsAdmin();
+  } catch(err) {
+    console.error('Error directorio:', err);
+    if(grid) grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:2rem">
+      <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:6px">Error: ${err.message}</div>
+      <div style="font-size:12px;color:var(--tm);margin-bottom:12px">Abre la consola del navegador (F12) para más detalles.</div>
+      <button class="btn btn-o btn-sm" onclick="cargarEmbajadores()">Reintentar</button>
+    </div>`;
+  }
+}
+
+// ── EXPORTAR ────────────────────────────────────
+function exportarLista() {
+  if(!todosEmbajadores.length){alert('No hay datos cargados todavía.');return;}
+  const cols=['NOMBRE Y APELLIDO','TIENDA','CARGO','ÁREA','ESTATUS','PAÍS','CÉDULA','FECHA DE INGRESO AL ROL'];
+  const filas=[cols,...todosEmbajadores.map(e=>cols.map(c=>get(e,c)||''))];
+  const ws=XLSX.utils.aoa_to_sheet(filas);
+  ws['!cols']=[22,20,22,14,10,12,12,22].map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Embajadores');
+  XLSX.writeFile(wb,'embajadores_'+new Date().toISOString().split('T')[0]+'.xlsx');
+}
+
+// ── DOM READY ───────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
 
-  // Admin setup
-  if (ROL_USUARIO === 'admin') {
-    document.querySelectorAll('.admin-only').forEach(el => el.style.display='flex');
-    const adminItem = document.createElement('button');
-    adminItem.className = 'ni';
-    adminItem.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin`;
-    adminItem.onclick = () => show('admin');
-    document.querySelector('.sbn').appendChild(adminItem);
-    const ur = document.querySelector('.ur');
-    if (ur) ur.textContent = 'ADMINISTRADORA';
+  // Admin
+  if (ROL_USUARIO==='admin') {
+    document.querySelectorAll('.admin-only').forEach(el=>el.style.display='flex');
+    const adminBtn=document.createElement('button');
+    adminBtn.className='ni';
+    adminBtn.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin';
+    adminBtn.onclick=()=>show('admin');
+    document.querySelector('.sbn').appendChild(adminBtn);
+    const ur=document.querySelector('.ur');
+    if(ur) ur.textContent='ADMINISTRADORA';
   }
 
-  // Nombre en hero
-  const greet = document.querySelector('.h-greet');
-  if (greet) greet.textContent = `Hola, ${NOMBRE_USUARIO.split(' ')[0]} 👋`;
+  // Saludo
+  const greet=document.querySelector('.h-greet');
+  if(greet) greet.textContent='Hola, '+NOMBRE_USUARIO.split(' ')[0]+' 👋';
 
-  // Render foro
-  const fl = document.getElementById('forum-list');
-  if (fl) foroPosts.forEach(p => {
-    fl.innerHTML += `<div class="forum-post">
-      <div class="fp-head">
-        <div class="fp-av" style="background:${p.col}">${ini(p.author)}</div>
-        <div class="fp-info">
-          <div class="fp-ttl">${p.title}</div>
-          <div class="fp-meta">${p.author} · ${p.store} · ${p.time}</div>
-        </div>
-      </div>
-      <div class="fp-preview">${p.preview}</div>
-      <div class="fp-foot">
-        <span class="fp-stat"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${p.replies} respuestas</span>
-        <span class="fp-stat"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>${p.likes}</span>
-      </div>
-    </div>`;
+  // Foro (ejemplo)
+  const foroPosts=[
+    {author:'María González',store:'T-012',title:'¿Cómo manejan la baja asistencia a talleres virtuales?',preview:'Tenemos dificultades con la asistencia. ¿Alguno tiene estrategias?',replies:14,likes:8,time:'Hace 2h',c:'#0d9f6e'},
+    {author:'Luis Ramírez',store:'T-023',title:'Comparto mi plantilla de seguimiento semanal',preview:'Diseñé una plantilla para hacer seguimiento a las capacitaciones...',replies:22,likes:31,time:'Hace 5h',c:'#1a56db'},
+    {author:'Sofía Torres',store:'T-067',title:'¿Han tenido problemas con el acceso al LMS?',preview:'Desde ayer varios colaboradores no pueden ingresar a la plataforma...',replies:9,likes:4,time:'Ayer',c:'#7c3aed'},
+    {author:'Ana Pérez',store:'Equipo Cap.',title:'Nueva funcionalidad disponible en el portal',preview:'Ya pueden subir los informes directamente desde el portal...',replies:18,likes:25,time:'Ayer',c:'#b45309'},
+  ];
+  const fl=$('forum-list');
+  if(fl) foroPosts.forEach(p=>{
+    fl.innerHTML+=`<div class="forum-post"><div class="fp-head">
+      <div class="fp-av" style="background:${p.c}">${ini(p.author)}</div>
+      <div class="fp-info"><div class="fp-ttl">${p.title}</div><div class="fp-meta">${p.author} · ${p.store} · ${p.time}</div></div>
+    </div>
+    <div class="fp-preview">${p.preview}</div>
+    <div class="fp-foot">
+      <span class="fp-stat"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${p.replies} respuestas</span>
+      <span class="fp-stat"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>${p.likes}</span>
+    </div></div>`;
   });
 
-  // Render seguimiento colaboradores
+  // Seguimiento (ejemplo)
   const colabs=[
     {name:'Ana García',role:'Cajera',a:true,b:true,c:false,p:60},
     {name:'Roberto Silva',role:'Aux. Farmacia',a:true,b:true,c:true,p:100},
@@ -1463,12 +1424,13 @@ document.addEventListener('DOMContentLoaded', () => {
     {name:'Carmen Flores',role:'Cajera',a:false,b:false,c:false,p:0},
     {name:'José Martínez',role:'Aux. Farmacia',a:true,b:true,c:false,p:65},
   ];
-  const tbody = document.getElementById('colab-tbody');
-  if (tbody) colabs.forEach((c,i) => {
-    const ok='<span class="pill pill-done">✓</span>';
-    const no='<span class="pill pill-red">✗</span>';
-    tbody.innerHTML += `<tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:8px 1rem"><div style="display:flex;align-items:center;gap:8px"><div style="width:26px;height:26px;border-radius:50%;background:${col(i)};color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center">${ini(c.name)}</div><div style="font-weight:600;color:var(--tp)">${c.name}</div></div></td>
+  const tbody=$('colab-tbody');
+  if(tbody) colabs.forEach((c,i)=>{
+    const ok='<span class="pill pill-done">✓</span>', no='<span class="pill pill-red">✗</span>';
+    tbody.innerHTML+=`<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 1rem"><div style="display:flex;align-items:center;gap:8px">
+        <div style="width:26px;height:26px;border-radius:50%;background:${col(i)};color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center">${ini(c.name)}</div>
+        <div style="font-weight:600;color:var(--tp)">${c.name}</div></div></td>
       <td style="padding:8px 1rem;color:var(--ts)">${c.role}</td>
       <td style="padding:8px 1rem;text-align:center">${c.a?ok:no}</td>
       <td style="padding:8px 1rem;text-align:center">${c.b?ok:no}</td>
@@ -1478,36 +1440,34 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Buscador embajadores
-  const searchInput = document.querySelector('#pane-embajadores input[type="text"]');
-  if (searchInput) searchInput.addEventListener('input', e => { busqueda=e.target.value; aplicarFiltros(); });
+  const si=document.querySelector('#pane-embajadores input[type="text"]');
+  if(si) si.addEventListener('input',e=>{busqueda=e.target.value;aplicarFiltros();});
 
   // Filtros embajadores
-  document.querySelectorAll('#pane-embajadores .emb-filter').forEach(b => {
-    b.addEventListener('click', function() {
-      document.querySelectorAll('#pane-embajadores .emb-filter').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('#pane-embajadores .emb-filter').forEach(b=>{
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#pane-embajadores .emb-filter').forEach(x=>x.classList.remove('active'));
       this.classList.add('active');
-      filtroActivo = this.dataset.filtro || 'todos';
+      filtroActivo=this.dataset.filtro||'todos';
       aplicarFiltros();
     });
   });
 
-  // Form nueva novedad
-  const formNov = document.getElementById('form-novedad');
-  if (formNov) formNov.addEventListener('submit', e => {
+  // Form novedad
+  const formNov=$('form-novedad');
+  if(formNov) formNov.addEventListener('submit',e=>{
     e.preventDefault();
-    const titulo    = document.getElementById('nov-titulo').value.trim();
-    const contenido = document.getElementById('nov-contenido').value.trim();
-    const tipo      = document.getElementById('nov-tipo').value;
-    if (!titulo || !contenido) return;
+    const titulo=$('nov-titulo').value.trim();
+    const contenido=$('nov-contenido').value.trim();
+    const tipo=$('nov-tipo').value;
+    if(!titulo||!contenido) return;
     novedadesData.unshift({id:Date.now(),titulo,contenido,tipo,autor:NOMBRE_USUARIO,fecha:new Date().toISOString().split('T')[0],activo:true});
-    guardarNovedades();
-    renderNovedades();
-    formNov.reset();
-    document.getElementById('form-novedad-wrap').style.display='none';
+    guardarNovedades(); renderNovedades(); formNov.reset();
+    $('form-novedad-wrap').style.display='none';
     show('novedades');
   });
 
-  // Cargar datos
+  // Inicializar
   cargarEmbajadores();
   cargarCursos();
   renderNovedades();
