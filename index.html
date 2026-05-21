@@ -1240,78 +1240,46 @@ async function cargarSeguimiento() {
   if (cont) cont.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:2rem;color:var(--tm);font-size:13px"><div style="width:16px;height:16px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>Cargando datos desde Firebase...</div>`;
 
   try {
-    // 1. Catálogo de cursos → mapa ID:titulo
+    // 1. Catálogo cursos → mapa ID:titulo
     const cursosSnap = await db.collection('cursos').get();
     const cursosCat = {};
     cursosSnap.forEach(c => { cursosCat[c.id] = c.data().titulo || c.data().nombre || c.id; });
 
-    // 2. Escuelas → extraer cursosInProgramas por escuela válida
-    const escuelasSnap = await db.collection('escuelas').get();
-    const cursosAEscuela = {}; // cursoId → 'Comercial'|'Servicio'|'Excelencia'
-    escuelasSnap.forEach(e => {
-      const d = e.data();
-      const t = (d.titulo || '').toLowerCase();
-      let nombre = '';
-      if (t.includes('comercial'))  nombre = 'Comercial';
-      else if (t.includes('servicio'))   nombre = 'Servicio';
-      else if (t.includes('excelencia')) nombre = 'Excelencia';
-      if (!nombre) return;
-      const refs = d.cursosInProgramas || d.cursos || [];
-      refs.forEach(ref => {
-        // Firestore DocumentReference — puede ser objeto con .id o .path
-        let id = '';
-        if (typeof ref === 'string') {
-          id = ref.split('/').pop();
-        } else if (ref && ref.id) {
-          id = ref.id;
-        } else if (ref && ref.path) {
-          id = ref.path.split('/').pop();
-        } else if (ref && ref._delegate) {
-          // Firebase compat SDK wraps in _delegate
-          id = ref._delegate.id || (ref._delegate.path||'').split('/').pop() || '';
-        }
-        if (id) cursosAEscuela[id] = nombre;
-      });
-    });
-    console.log('cursosAEscuela count:', Object.keys(cursosAEscuela).length, 'sample:', Object.keys(cursosAEscuela).slice(0,3));
+    // Inferir escuela desde título del curso
+    const escuelaDeCurso = titulo => {
+      const t = (titulo||'').toLowerCase();
+      if (t.includes('comercial')) return 'Comercial';
+      if (t.includes('servicio'))  return 'Servicio';
+      if (t.includes('excelencia')) return 'Excelencia';
+      return '';
+    };
 
-    // DEBUG: ver qué trae escuelas
-    escuelasSnap.forEach(e => {
-      const d = e.data();
-      const t = (d.titulo || '').toLowerCase();
-      if (t.includes('comercial') || t.includes('servicio') || t.includes('excelencia')) {
-        console.log('ESCUELA:', d.titulo, '| cursosInProgramas count:', (d.cursosInProgramas||[]).length, '| cursos count:', (d.cursos||[]).length);
-        const refs = d.cursosInProgramas || d.cursos || [];
-        if (refs.length > 0) console.log('  Primer ref:', JSON.stringify(refs[0]));
-      }
-    });
-    console.log('Total cursosAEscuela:', Object.keys(cursosAEscuela).length);
-    // 3. Planes → mapa nivelCargo|pais → Set de cursoIds válidos
+    // 2. Planes → mapa nivelCargo|pais → Set de cursoIds de escuelas válidas
     const planesSnap = await db.collection('planesFormacion').get();
     const planMap = {};
     const extractRef = ref => {
       if (!ref) return '';
       if (typeof ref === 'string') return ref.split('/').pop();
-      // Firebase compat DocumentReference
-      try {
-        if (ref.id) return ref.id;
-        if (ref.path) return ref.path.split('/').pop();
-        const del = ref._delegate || {};
-        if (del.id) return del.id;
-        const seg = del._key && del._key.path && del._key.path.segments;
-        if (seg) return seg[seg.length-1];
-      } catch(e) {}
+      if (ref.id) return ref.id;
+      if (ref.path) return ref.path.split('/').pop();
       return '';
     };
 
-    console.log('Total planes:', planesSnap.size);
-    let planesVP = 0;
     planesSnap.forEach(p => {
       const d = p.data();
       if (!(d.areaGeneral||[]).includes('VP OPERACIONES')) return;
-      planesVP++;
-      const cursosValidos = (d.cursos||[]).map(extractRef).filter(id => id && cursosAEscuela[id]);
+
+      // Filtrar solo cursos de Comercial/Servicio/Excelencia por título
+      const cursosValidos = (d.cursos||[])
+        .map(extractRef)
+        .filter(id => {
+          if (!id) return false;
+          const titulo = cursosCat[id] || '';
+          return escuelaDeCurso(titulo) !== '';
+        });
+
       if (!cursosValidos.length) return;
+
       (d.nivelCargo||[]).forEach(nivel => {
         (d.pais||['VE']).forEach(pais => {
           const key = `${nivel.toUpperCase()}|${pais.toUpperCase()}`;
@@ -1320,11 +1288,10 @@ async function cargarSeguimiento() {
         });
       });
     });
-    console.log('Planes VP OPERACIONES:', planesVP, '| planMap keys:', Object.keys(planMap).length, Object.keys(planMap).slice(0,3));
 
-    // 4. Usuarios — usar cursosProgreso del propio documento user para evitar quota
-    // El campo cursosProgreso está como subcolección pero progresoEscuelas/progresoProgramas
-    // están en el documento → usarlos para el % y cursosProgreso para el detalle
+    console.log('planMap keys:', Object.keys(planMap).length, Object.keys(planMap).slice(0,3));
+
+    // 3. Usuarios con tienda
     const usersSnap = await db.collection('users').limit(300).get();
     const promesas = usersSnap.docs.map(async uDoc => {
       const u = uDoc.data();
@@ -1335,7 +1302,6 @@ async function cargarSeguimiento() {
       const cursosDelPlan = planMap[`${nivelCargo}|${pais}`];
       if (!cursosDelPlan || cursosDelPlan.size === 0) return null;
 
-      // Solo leer cursosProgreso para usuarios con plan
       const progSnap = await db.collection('users').doc(uDoc.id).collection('cursosProgreso').get();
       const cursosProgreso = {};
       progSnap.forEach(p => { cursosProgreso[p.id] = p.data(); });
@@ -1350,17 +1316,23 @@ async function cargarSeguimiento() {
     });
 
     segData = (await Promise.all(promesas)).filter(Boolean);
-    console.log('segData count:', segData.length);
+    console.log('segData:', segData.length);
 
-    // 5. Columnas
+    // 4. Columnas = union de cursos de planes con escuela válida
     const colMap = {};
     segData.forEach(u => u.cursosDelPlan.forEach(id => {
-      if (!colMap[id] && cursosAEscuela[id]) colMap[id] = { id, titulo: cursosCat[id]||id, escuela: cursosAEscuela[id] };
+      if (!colMap[id]) {
+        const titulo = cursosCat[id] || id;
+        const escuela = escuelaDeCurso(titulo);
+        if (escuela) colMap[id] = { id, titulo, escuela };
+      }
     }));
-    segCursosAll = Object.values(colMap).sort((a,b) => a.escuela.localeCompare(b.escuela)||a.titulo.localeCompare(b.titulo));
-    console.log('segCursosAll count:', segCursosAll.length);
+    segCursosAll = Object.values(colMap).sort((a,b) =>
+      a.escuela.localeCompare(b.escuela) || a.titulo.localeCompare(b.titulo)
+    );
+    console.log('segCursosAll:', segCursosAll.length);
 
-    // 6. Filtros
+    // 5. Filtros
     const fill = (id, vals, label) => { const el=$(id); if(el) el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${v}">${v}</option>`).join(''); };
     const uniq = arr => [...new Set(arr.filter(v=>v&&v!=='—'))].sort();
     fill('sf-escuela', [...new Set(segCursosAll.map(c=>c.escuela).filter(Boolean))].sort(), 'Todas las escuelas');
