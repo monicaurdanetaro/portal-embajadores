@@ -1181,7 +1181,7 @@ function renderTabla(usuarios, programas) {
   usuarios.sort((a, b) => {
     const pctA = (() => { const apl=programas.filter(p=>a.programas[p.id]!==undefined); return apl.length>0?apl.filter(p=>estadoPrograma(a.programas[p.id])==='formado').length/apl.length:0; })();
     const pctB = (() => { const apl=programas.filter(p=>b.programas[p.id]!==undefined); return apl.length>0?apl.filter(p=>estadoPrograma(b.programas[p.id])==='formado').length/apl.length:0; })();
-    return pctA - pctB;
+    return pctB - pctA;
   });
 
   const filas = usuarios.map((u,i) => {
