@@ -1188,9 +1188,9 @@ function exportarSeguimiento() {
   if (escuela) cursos = cursos.filter(c => c.escuela === escuela);
 
   if (estatus === 'formado') {
-    usuarios = usuarios.filter(u => cursos.some(c => u.cursos[c.id]?.progreso === 1));
+    usuarios = usuarios.filter(u => cursos.some(c => u.cursosProgreso[c.id]?.progreso === 1));
   } else if (estatus === 'pendiente') {
-    usuarios = usuarios.filter(u => cursos.some(c => !u.cursos[c.id] || u.cursos[c.id].progreso !== 1));
+    usuarios = usuarios.filter(u => cursos.some(c => u.cursosDelPlan.has(c.id) && u.cursosProgreso[c.id]?.progreso !== 1));
   }
 
   if (!usuarios.length) { alert('No hay datos con el filtro actual.'); return; }
@@ -1213,8 +1213,9 @@ function exportarSeguimiento() {
   // % por curso (última fila)
   const pctRow = ['% Formación', '', '', '', '',
     ...cursos.map(c => {
-      const f = usuarios.filter(u => u.cursos[c.id]?.progreso === 1).length;
-      return Math.round(f / usuarios.length * 100) + '%';
+      const aplican = usuarios.filter(u => u.cursosDelPlan.has(c.id));
+      const f = aplican.filter(u => u.cursosProgreso[c.id]?.progreso === 1).length;
+      return aplican.length > 0 ? Math.round(f/aplican.length*100)+'%' : 'N/A';
     })
   ];
 
@@ -1288,12 +1289,28 @@ async function cargarSeguimiento() {
       return '';
     };
 
-    // 2. Usuarios con tienda
-    const usersSnap = await db.collection('users').limit(300).get();
-    const promesas = usersSnap.docs.map(async uDoc => {
+    // 2. Usuarios con tienda — paginar para traer todos
+    let todosUsers = [];
+    let lastDoc = null;
+    const BATCH = 500;
+
+    while (true) {
+      let query = db.collection('users').limit(BATCH);
+      if (lastDoc) query = query.startAfter(lastDoc);
+      const snap = await query.get();
+      if (snap.empty) break;
+      todosUsers = todosUsers.concat(snap.docs);
+      lastDoc = snap.docs[snap.docs.length - 1];
+      if (snap.docs.length < BATCH) break;
+    }
+    console.log('Total usuarios cargados:', todosUsers.length);
+
+    const promesas = todosUsers.map(async uDoc => {
       const u = uDoc.data();
       if (!u.tienda || !u.tienda.trim()) return null;
       if (!u.display_name && !u.nombre) return null;
+      // Solo usuarios activos
+      if ((u.estado||u.estatus||'').toLowerCase() !== 'activo') return null;
 
       // Leer cursosProgreso
       const progSnap = await db.collection('users').doc(uDoc.id).collection('cursosProgreso').get();
