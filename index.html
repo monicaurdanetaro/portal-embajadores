@@ -1258,10 +1258,22 @@ async function cargarSeguimiento() {
       if (!nombre) return;
       const refs = d.cursosInProgramas || d.cursos || [];
       refs.forEach(ref => {
-        const id = typeof ref === 'string' ? ref.split('/').pop() : (ref.id || (ref.path||'').split('/').pop() || '');
+        // Firestore DocumentReference — puede ser objeto con .id o .path
+        let id = '';
+        if (typeof ref === 'string') {
+          id = ref.split('/').pop();
+        } else if (ref && ref.id) {
+          id = ref.id;
+        } else if (ref && ref.path) {
+          id = ref.path.split('/').pop();
+        } else if (ref && ref._delegate) {
+          // Firebase compat SDK wraps in _delegate
+          id = ref._delegate.id || (ref._delegate.path||'').split('/').pop() || '';
+        }
         if (id) cursosAEscuela[id] = nombre;
       });
     });
+    console.log('cursosAEscuela count:', Object.keys(cursosAEscuela).length, 'sample:', Object.keys(cursosAEscuela).slice(0,3));
 
     // DEBUG: ver qué trae escuelas
     escuelasSnap.forEach(e => {
@@ -1280,7 +1292,13 @@ async function cargarSeguimiento() {
       const d = p.data();
       if (!(d.areaGeneral||[]).includes('VP OPERACIONES')) return;
       const cursosValidos = (d.cursos||[])
-        .map(ref => typeof ref==='string' ? ref.split('/').pop() : (ref.id||(ref.path||'').split('/').pop()||''))
+        .map(ref => {
+          if (typeof ref === 'string') return ref.split('/').pop();
+          if (ref && ref.id) return ref.id;
+          if (ref && ref.path) return ref.path.split('/').pop();
+          if (ref && ref._delegate) return ref._delegate.id || (ref._delegate.path||'').split('/').pop() || '';
+          return '';
+        })
         .filter(id => id && cursosAEscuela[id]);
       if (!cursosValidos.length) return;
       (d.nivelCargo||[]).forEach(nivel => {
