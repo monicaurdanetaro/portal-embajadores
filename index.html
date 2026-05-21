@@ -1245,107 +1245,85 @@ async function cargarSeguimiento() {
     const cursosCat = {};
     cursosSnap.forEach(c => { cursosCat[c.id] = c.data().titulo || c.data().nombre || c.id; });
 
-    // Inferir escuela desde título del curso — basado en títulos reales de Firebase
+    // Clasificar curso por escuela según título real
     const escuelaDeCurso = titulo => {
       const t = (titulo||'').toLowerCase();
       // Escuela Comercial
-      if (t.includes('escuela comercial') || t.includes('| escuela comercial') ||
-          t.includes('cuidado facial') || t.includes('cuidado del cabello') ||
+      if (t.includes('cuidado facial') || t.includes('cuidado del cabello') ||
           t.includes('cuidado bucal') || t.includes('cuidado de las uñas') ||
-          t.includes('cuidado de heridas') || t.includes('dermocosméticos') ||
-          t.includes('dermocosmético') || t.includes('nutrición') ||
+          t.includes('cuidado de heridas') || t.includes('cuidado de pies') ||
+          t.includes('dermocosm') || t.includes('nutrición') || t.includes('nutricion') ||
           t.includes('vitaminas') || t.includes('complementos de salud') ||
-          t.includes('medicamentos rx') || t.includes('otc') ||
-          t.includes('farmacéuticos') || t.includes('cosméticos') ||
-          t.includes('cosmético') || t.includes('maquillaje') ||
-          t.includes('maybelline') || t.includes('esmaltes') ||
+          t.includes('medicamentos rx') || t.includes('medicamentos otc') ||
+          t.includes('otc') || t.includes('farmacéuticos') || t.includes('farmaceuticos') ||
+          t.includes('cosméticos') || t.includes('cosmeticos') ||
+          t.includes('maquillaje') || t.includes('maybelline') || t.includes('esmaltes') ||
           t.includes('estrategia comercial') || t.includes('planificación de actividades') ||
-          t.includes('rutina') || t.includes('marca propia') ||
-          t.includes('cuidado de pies') || t.includes('sellado') ||
-          t.includes('manejo de estados gástricos') || t.includes('manejo del dolor') ||
-          t.includes('servicios farmacéuticos') || t.includes('dispensación') ||
-          t.includes('medicinas de otc') || t.includes('primeros auxilios'))
+          t.includes('rutina') || t.includes('marca propia') || t.includes('sellado') ||
+          t.includes('gástrico') || t.includes('gastrico') || t.includes('dolor y fiebre') ||
+          t.includes('servicios farmacéuticos') || t.includes('servicios farmaceuticos') ||
+          t.includes('dispensación') || t.includes('dispensacion') ||
+          t.includes('primeros auxilios') || t.includes('escuela comercial') ||
+          t.includes('flormar') || t.includes('cerave') || t.includes('isdin') ||
+          t.includes('coloración') || t.includes('coloracion') ||
+          t.includes('ampollas') || t.includes('línea dermocosm') || t.includes('linea dermocosm') ||
+          t.includes('almacenamiento de productos') || t.includes('fórmulas magistrales') ||
+          t.includes('formulas magistrales') || t.includes('sustitutos'))
         return 'Comercial';
-      // Escuela de Servicio
+      // Escuela Servicio
       if (t.includes('conducta') || t.includes('qué hacer') || t.includes('que hacer') ||
           t.includes('manejo de situaciones') || t.includes('cultura de servicio') ||
           t.includes('servicio al cliente') || t.includes('atención en el mostrador') ||
-          t.includes('autopago') || t.includes('autofarmacia') || t.includes('asesoría en el piso'))
+          t.includes('atencion en el mostrador') || t.includes('autopago') ||
+          t.includes('autofarmacia') || t.includes('asesoría en el piso') ||
+          t.includes('asesoria en el piso'))
         return 'Servicio';
-      // Escuela de Excelencia
+      // Escuela Excelencia
       if (t.includes('planograma') || t.includes('pilares de la operación') ||
-          t.includes('manejo de inventario') || t.includes('manejo del depósito') ||
-          t.includes('inventario') || t.includes('depósito') || t.includes('deposito') ||
-          t.includes('auditoría de conciliación') || t.includes('conciliación'))
+          t.includes('pilares de la operacion') || t.includes('manejo de inventario') ||
+          t.includes('manejo del depósito') || t.includes('manejo del deposito') ||
+          t.includes('inventario') || t.includes('conciliación') || t.includes('conciliacion') ||
+          t.includes('auditoría') || t.includes('auditoria'))
         return 'Excelencia';
       return '';
     };
 
-    // 2. Planes → mapa nivelCargo|pais → Set de cursoIds de escuelas válidas
-    const planesSnap = await db.collection('planesFormacion').get();
-    const planMap = {};
-    const extractRef = ref => {
-      if (!ref) return '';
-      if (typeof ref === 'string') return ref.split('/').pop();
-      if (ref.id) return ref.id;
-      if (ref.path) return ref.path.split('/').pop();
-      return '';
-    };
-
-    planesSnap.forEach(p => {
-      const d = p.data();
-      if (!(d.areaGeneral||[]).includes('VP OPERACIONES')) return;
-
-      // Filtrar solo cursos de Comercial/Servicio/Excelencia por título
-      const cursosValidos = (d.cursos||[])
-        .map(extractRef)
-        .filter(id => {
-          if (!id) return false;
-          const titulo = cursosCat[id] || '';
-          return escuelaDeCurso(titulo) !== '';
-        });
-
-      if (!cursosValidos.length) return;
-
-      (d.nivelCargo||[]).forEach(nivel => {
-        (d.pais||['VE']).forEach(pais => {
-          const key = `${nivel.toUpperCase()}|${pais.toUpperCase()}`;
-          if (!planMap[key]) planMap[key] = new Set();
-          cursosValidos.forEach(id => planMap[key].add(id));
-        });
-      });
-    });
-
-    console.log('planMap keys:', Object.keys(planMap).length, Object.keys(planMap).slice(0,3));
-
-    // 3. Usuarios con tienda
+    // 2. Usuarios con tienda
     const usersSnap = await db.collection('users').limit(300).get();
     const promesas = usersSnap.docs.map(async uDoc => {
       const u = uDoc.data();
       if (!u.tienda || !u.tienda.trim()) return null;
       if (!u.display_name && !u.nombre) return null;
-      const nivelCargo = (u.nivelCargo||'').toUpperCase();
-      const pais = (u.pais||'VE').toUpperCase();
-      const cursosDelPlan = planMap[`${nivelCargo}|${pais}`];
-      if (!cursosDelPlan || cursosDelPlan.size === 0) return null;
 
+      // Leer cursosProgreso
       const progSnap = await db.collection('users').doc(uDoc.id).collection('cursosProgreso').get();
       const cursosProgreso = {};
-      progSnap.forEach(p => { cursosProgreso[p.id] = p.data(); });
+      // Solo guardar cursos de las 3 escuelas
+      progSnap.forEach(p => {
+        const titulo = cursosCat[p.id] || '';
+        if (escuelaDeCurso(titulo)) cursosProgreso[p.id] = p.data();
+      });
+
+      // cursosDelPlan = solo los que le aplican = los que están en su cursosProgreso de escuelas
+      const cursosDelPlan = new Set(Object.keys(cursosProgreso));
+      if (cursosDelPlan.size === 0) return null;
 
       return {
         id: uDoc.id,
         nombre: u.display_name || ((u.nombre||'')+' '+(u.apellido||'')).trim(),
-        cargo: u.cargo||'—', nivelCargo,
-        tienda: u.tienda, area: u.area||u.areaGeneral||'—',
-        cursosDelPlan, cursosProgreso
+        cargo: u.cargo||'—',
+        nivelCargo: (u.nivelCargo||'').toUpperCase(),
+        tienda: u.tienda,
+        area: u.area||u.areaGeneral||'—',
+        cursosDelPlan,
+        cursosProgreso
       };
     });
 
     segData = (await Promise.all(promesas)).filter(Boolean);
     console.log('segData:', segData.length);
 
-    // 4. Columnas = union de cursos de planes con escuela válida
+    // 3. Columnas = union de todos los cursos de escuelas
     const colMap = {};
     segData.forEach(u => u.cursosDelPlan.forEach(id => {
       if (!colMap[id]) {
@@ -1359,7 +1337,7 @@ async function cargarSeguimiento() {
     );
     console.log('segCursosAll:', segCursosAll.length);
 
-    // 5. Filtros
+    // 4. Filtros
     const fill = (id, vals, label) => { const el=$(id); if(el) el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${v}">${v}</option>`).join(''); };
     const uniq = arr => [...new Set(arr.filter(v=>v&&v!=='—'))].sort();
     fill('sf-escuela', [...new Set(segCursosAll.map(c=>c.escuela).filter(Boolean))].sort(), 'Todas las escuelas');
@@ -1374,8 +1352,6 @@ async function cargarSeguimiento() {
     if (cont) cont.innerHTML = `<div style="padding:2rem;text-align:center"><div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:6px">No se pudo cargar</div><div style="font-size:12px;color:var(--tm);margin-bottom:10px">${err.message}</div><button class="btn btn-o btn-sm" onclick="cargarSeguimiento()">Reintentar</button></div>`;
   }
 }
-
-
 // ── UTILIDADES ──────────────────────────────────
 const COLORS = ['#1a56db','#7c3aed','#0d9f6e','#dc2626','#b45309','#0891b2','#9333ea','#be123c','#15803d','#c2410c'];
 const MESES  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
