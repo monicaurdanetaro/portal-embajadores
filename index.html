@@ -564,6 +564,7 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
         <p class="sec-sub">Estatus de formación por colaborador y curso.</p>
       </div>
       <button class="btn btn-o btn-sm" onclick="cargarSeguimiento()" style="margin-top:.3rem">↻ Actualizar</button>
+      <button class="btn btn-p btn-sm" onclick="exportarSeguimiento()" style="margin-top:.3rem">⬇ Exportar Excel</button>
     </div>
 
     <!-- Filtros macro -->
@@ -1156,16 +1157,92 @@ function renderTabla(usuarios, cursos) {
   </div>`;
 }
 
+function exportarSeguimiento() {
+  if (!segData.length) { alert('No hay datos cargados todavía.'); return; }
+
+  // Obtener filtros activos
+  const escuela = $('sf-escuela')?.value || '';
+  const area    = $('sf-area')?.value    || '';
+  const tienda  = $('sf-tienda')?.value  || '';
+  const cargo   = $('sf-cargo')?.value   || '';
+  const estatus = $('sf-estatus')?.value || '';
+
+  let usuarios = [...segData];
+  if (tienda)  usuarios = usuarios.filter(u => u.tienda === tienda);
+  if (area)    usuarios = usuarios.filter(u => u.area === area);
+  if (cargo)   usuarios = usuarios.filter(u => u.cargo === cargo);
+
+  let cursos = [...segCursosAll];
+  if (escuela) cursos = cursos.filter(c => c.escuela === escuela);
+
+  if (estatus === 'formado') {
+    usuarios = usuarios.filter(u => cursos.some(c => u.cursos[c.id]?.progreso === 1));
+  } else if (estatus === 'pendiente') {
+    usuarios = usuarios.filter(u => cursos.some(c => !u.cursos[c.id] || u.cursos[c.id].progreso !== 1));
+  }
+
+  if (!usuarios.length) { alert('No hay datos con el filtro actual.'); return; }
+
+  // Construir filas
+  const headers = ['Colaborador', 'Cargo', 'Tienda', 'Área', '% Total', ...cursos.map(c => c.titulo)];
+  const rows = usuarios.map(u => {
+    const pctU = cursos.length > 0
+      ? Math.round(cursos.filter(c => u.cursos[c.id]?.progreso === 1).length / cursos.length * 100) : 0;
+    return [
+      u.nombre, u.cargo, u.tienda, u.area, pctU + '%',
+      ...cursos.map(c => u.cursos[c.id]?.progreso === 1 ? 'Formado' : 'Pendiente')
+    ];
+  });
+
+  // % por curso (última fila)
+  const pctRow = ['% Formación', '', '', '', '',
+    ...cursos.map(c => {
+      const f = usuarios.filter(u => u.cursos[c.id]?.progreso === 1).length;
+      return Math.round(f / usuarios.length * 100) + '%';
+    })
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows, [], pctRow]);
+
+  // Anchos de columna
+  ws['!cols'] = [
+    {wch:28}, {wch:22}, {wch:28}, {wch:18}, {wch:10},
+    ...cursos.map(() => ({wch:20}))
+  ];
+
+  const wb = XLSX.utils.book_new();
+  const sheetName = tienda ? tienda.substring(0,30) : 'Seguimiento';
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+  const fecha = new Date().toISOString().split('T')[0];
+  const nombre = `seguimiento_${tienda||'todos'}_${fecha}.xlsx`.replace(/[^a-z0-9_.\-]/gi,'_');
+  XLSX.writeFile(wb, nombre);
+}
+
 async function cargarSeguimiento() {
   const cont = $('sf-tabla-container');
   if (cont) cont.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:2rem;color:var(--tm);font-size:13px"><div style="width:16px;height:16px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>Cargando datos desde Firebase...</div>`;
 
   try {
+    // 1. Cargar catálogo de cursos para obtener títulos reales
+    const cursosSnap = await db.collection('cursos').get();
+    const cursosCatalogo = {};
+    cursosSnap.forEach(c => {
+      const d = c.data();
+      cursosCatalogo[c.id] = {
+        titulo:  d.titulo || d.nombre || c.id,
+        escuela: d.escuela || d.escuelaTitulo || '',
+      };
+    });
+
+    // 2. Cargar usuarios — solo los de tienda (VP Operaciones)
     const usersSnap = await db.collection('users').limit(300).get();
 
     const promesas = usersSnap.docs.map(async uDoc => {
       const u = uDoc.data();
       if (!u.display_name && !u.nombre) return null;
+      // Solo usuarios con tienda asignada (VP Operaciones)
+      if (!u.tienda || u.tienda.trim() === '') return null;
 
       const progSnap = await db.collection('users').doc(uDoc.id).collection('cursosProgreso').get();
       const cursos = {};
@@ -1189,31 +1266,34 @@ async function cargarSeguimiento() {
 
     segData = (await Promise.all(promesas)).filter(Boolean);
 
-    // Construir lista de cursos únicos (columnas) con su escuela
+    // 3. Construir columnas con títulos reales del catálogo
     const cursosMap = {};
     segData.forEach(u => {
-      Object.entries(u.cursos).forEach(([id, c]) => {
+      Object.keys(u.cursos).forEach(id => {
         if (!cursosMap[id]) {
-          const titulo = c.titulo || c.cursoTitulo || c.nombre || id;
-          // Inferir escuela del título
-          let escuela = '';
-          if (titulo.toLowerCase().includes('comercial')) escuela = 'Comercial';
-          else if (titulo.toLowerCase().includes('excelencia')) escuela = 'Excelencia';
-          else if (titulo.toLowerCase().includes('servicio')) escuela = 'Servicio';
+          const cat = cursosCatalogo[id];
+          const titulo = cat?.titulo || id;
+          // Inferir escuela del título o del catálogo
+          let escuela = cat?.escuela || '';
+          if (!escuela) {
+            const t = titulo.toLowerCase();
+            if (t.includes('comercial')) escuela = 'Comercial';
+            else if (t.includes('excelencia')) escuela = 'Excelencia';
+            else if (t.includes('servicio')) escuela = 'Servicio';
+          }
           cursosMap[id] = { id, titulo, escuela };
         }
       });
     });
     segCursosAll = Object.values(cursosMap).sort((a,b) => a.titulo.localeCompare(b.titulo));
 
-    // Poblar filtros
+    // 4. Poblar filtros
     const fill = (id, vals, label) => {
       const el = $(id);
       if (el) el.innerHTML = `<option value="">${label}</option>` + vals.map(v=>`<option value="${v}">${v}</option>`).join('');
     };
     const uniq = (arr) => [...new Set(arr.filter(v=>v&&v!=='—'))].sort();
 
-    // Escuelas desde los datos de cursosProgreso
     const escuelasDisp = [...new Set(segCursosAll.map(c=>c.escuela).filter(Boolean))].sort();
     fill('sf-escuela', escuelasDisp, 'Todas las escuelas');
     fill('sf-area',   uniq(segData.map(u=>u.area)),   'Todas las áreas');
