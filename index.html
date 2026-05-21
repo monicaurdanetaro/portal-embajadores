@@ -615,22 +615,14 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
 
     <!-- Stats -->
     <div class="card" id="sf-stats-card" style="display:none;margin-bottom:1rem;padding:0">
-      <div style="display:grid;grid-template-columns:repeat(4,1fr)">
-        <div style="padding:.9rem 1rem;border-right:1px solid var(--border)">
-          <div style="font-family:var(--fd);font-size:1.5rem;font-weight:800;color:var(--navy)" id="sf-pct">—</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr">
+        <div style="padding:1rem 1.4rem;border-right:1px solid var(--border)">
+          <div style="font-family:var(--fd);font-size:2rem;font-weight:800;color:var(--navy)" id="sf-pct">—</div>
           <div style="font-size:11px;color:var(--tm);margin-top:2px">Cumplimiento global</div>
-          <div style="height:3px;border-radius:3px;background:var(--bg);margin-top:6px;overflow:hidden"><div id="sf-bar" style="height:100%;width:0%;background:var(--green);border-radius:3px;transition:width .5s"></div></div>
+          <div style="height:4px;border-radius:3px;background:var(--bg);margin-top:8px;overflow:hidden"><div id="sf-bar" style="height:100%;width:0%;background:var(--green);border-radius:3px;transition:width .5s"></div></div>
         </div>
-        <div style="padding:.9rem 1rem;border-right:1px solid var(--border)">
-          <div style="font-family:var(--fd);font-size:1.5rem;font-weight:800;color:var(--green)" id="sf-formados">—</div>
-          <div style="font-size:11px;color:var(--tm);margin-top:2px">Formados</div>
-        </div>
-        <div style="padding:.9rem 1rem;border-right:1px solid var(--border)">
-          <div style="font-family:var(--fd);font-size:1.5rem;font-weight:800;color:var(--amber)" id="sf-pendientes">—</div>
-          <div style="font-size:11px;color:var(--tm);margin-top:2px">Pendientes</div>
-        </div>
-        <div style="padding:.9rem 1rem">
-          <div style="font-family:var(--fd);font-size:1.5rem;font-weight:800;color:var(--blue)" id="sf-total-col">—</div>
+        <div style="padding:1rem 1.4rem">
+          <div style="font-family:var(--fd);font-size:2rem;font-weight:800;color:var(--blue)" id="sf-total-col">—</div>
           <div style="font-size:11px;color:var(--tm);margin-top:2px">Colaboradores</div>
         </div>
       </div>
