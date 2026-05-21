@@ -575,12 +575,10 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
           <div style="position:relative">
             <input id="sf-tienda-search" type="text" placeholder="Escribe el nombre de tu tienda..."
               oninput="filtrarOpcionesTienda(this.value)"
-              onfocus="document.getElementById('sf-tienda-dropdown').style.display='block'"
-              style="width:100%;background:var(--bg);border:1.5px solid rgba(99,130,255,.25);border-radius:9px;padding:9px 12px 9px 36px;font-family:var(--fb);font-size:13px;color:var(--tp);outline:none;transition:border-color .2s"
-              onfocusin="this.style.borderColor='rgba(99,130,255,.5)'"
-              onfocusout="setTimeout(()=>document.getElementById('sf-tienda-dropdown').style.display='none',200)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round" style="position:absolute;left:11px;top:50%;transform:translateY(-50%)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <div id="sf-tienda-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:100;max-height:200px;overflow-y:auto;margin-top:4px" id="sf-tienda-dropdown"></div>
+              onclick="filtrarOpcionesTienda(this.value)"
+              style="width:100%;background:var(--bg);border:1.5px solid rgba(99,130,255,.25);border-radius:9px;padding:9px 12px 9px 36px;font-family:var(--fb);font-size:13px;color:var(--tp);outline:none;transition:border-color .2s">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <div id="sf-tienda-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:999;max-height:220px;overflow-y:auto"></div>
           </div>
         </div>
         <div id="sf-tienda-seleccionada" style="display:none;align-items:center;gap:8px;background:var(--blue-bg);border:1px solid rgba(99,130,255,.2);padding:7px 12px;border-radius:8px">
@@ -1082,15 +1080,14 @@ async function inicializarSeguimiento() {
 function mostrarDropdownTiendas(lista) {
   const dd = $('sf-tienda-dropdown');
   if (!dd) return;
-  if (!lista.length) { dd.innerHTML=`<div style="padding:8px 12px;font-size:12px;color:var(--tm)">No se encontraron tiendas</div>`; return; }
-  dd.innerHTML = lista.slice(0,50).map(t =>
-    `<div onclick="seleccionarTienda('${t.replace(/'/g,"\\'")}')" style="padding:8px 12px;font-size:12.5px;color:var(--tp);cursor:pointer" onmouseover="this.style.background='var(--blue-bg)'" onmouseout="this.style.background=''">${t}</div>`
-  ).join('') + (lista.length>50?`<div style="padding:6px 12px;font-size:11px;color:var(--tm)">Escribe más para filtrar...</div>`:'');
+  if (!lista.length) { dd.innerHTML=`<div style="padding:8px 12px;font-size:12px;color:var(--tm)">No se encontraron tiendas</div>`; dd.style.display='block'; return; }
+  dd.innerHTML = lista.slice(0,80).map(t =>
+    `<div onmousedown="seleccionarTienda('${t.replace(/'/g,"\\'")}')" style="padding:9px 14px;font-size:12.5px;color:var(--tp);cursor:pointer;transition:background .1s;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--blue-bg)'" onmouseout="this.style.background=''">${t}</div>`
+  ).join('') + (lista.length>80?`<div style="padding:6px 12px;font-size:11px;color:var(--tm);text-align:center">Escribe más para filtrar (${lista.length} resultados)</div>`:'');
+  dd.style.display = 'block';
 }
 
 function filtrarOpcionesTienda(val) {
-  const dd = $('sf-tienda-dropdown');
-  if (dd) dd.style.display = 'block';
   const filtradas = val.trim() ? todasLasTiendas.filter(t=>t.toLowerCase().includes(val.toLowerCase())) : todasLasTiendas;
   mostrarDropdownTiendas(filtradas);
 }
@@ -1832,6 +1829,12 @@ document.addEventListener('DOMContentLoaded', () => {
     guardarNovedades(); renderNovedades(); formNov.reset();
     $('form-novedad-wrap').style.display='none';
     show('novedades');
+  });
+
+  // Cerrar dropdown tienda al hacer click fuera
+  document.addEventListener('click', e => {
+    const dd = $('sf-tienda-dropdown'), input = $('sf-tienda-search');
+    if (dd && input && !input.contains(e.target) && !dd.contains(e.target)) dd.style.display='none';
   });
 
   // Inicializar
