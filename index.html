@@ -1289,35 +1289,13 @@ async function cargarSeguimiento() {
       return '';
     };
 
-    // 2. Usuarios activos con tienda
+    // 2. Usuarios activos con tienda — sin índice compuesto
     const usersSnap = await db.collection('users')
       .where('estado', '==', 'Activo')
-      .where('tienda', '>', '')
       .get();
-    console.log('Query resultado:', usersSnap.size);
+    console.log('Usuarios activos:', usersSnap.size);
 
-    // Si el query no funciona (índice faltante), paginar manualmente
-    let userDocs = usersSnap.docs;
-    if (usersSnap.size === 0) {
-      console.log('Paginando manualmente...');
-      let lastDoc = null;
-      while (true) {
-        let q = db.collection('users').limit(500);
-        if (lastDoc) q = q.startAfter(lastDoc);
-        const snap = await q.get();
-        if (snap.empty) break;
-        userDocs = userDocs.concat(snap.docs.filter(d => {
-          const u = d.data();
-          return u.estado === 'Activo' && u.tienda && u.tienda.trim();
-        }));
-        lastDoc = snap.docs[snap.docs.length-1];
-        if (snap.docs.length < 500) break;
-        if (userDocs.length > 5000) break; // límite de seguridad
-      }
-      console.log('Manual paginado:', userDocs.length);
-    }
-
-    const promesas = userDocs.map(async uDoc => {
+    const promesas = usersSnap.docs.map(async uDoc => {
       const u = uDoc.data();
       if (!u.tienda || !u.tienda.trim()) return null;
       if (!u.display_name && !u.nombre) return null;
