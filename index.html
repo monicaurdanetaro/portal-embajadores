@@ -563,7 +563,10 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
         <h2 class="sec-ttl">Seguimiento de capacitaciones</h2>
         <p class="sec-sub">Estatus de formación por colaborador y curso.</p>
       </div>
-      <button class="btn btn-p btn-sm" onclick="exportarSeguimiento()" style="margin-top:.3rem">⬇ Exportar Excel</button>
+      <div style="display:flex;gap:8px;margin-top:.3rem">
+        <button class="btn btn-o btn-sm" onclick="if(segTiendaActual) cargarSeguimiento(segTiendaActual)">↻ Actualizar</button>
+        <button class="btn btn-p btn-sm" onclick="exportarSeguimiento()">⬇ Exportar Excel</button>
+      </div>
     </div>
 
     <!-- Selector de tienda (macro) con buscador -->
