@@ -1041,11 +1041,15 @@ function filtrarSeg() {
   let cursos = [...segCursosAll];
   if (escuela) cursos = cursos.filter(c => c.escuela === escuela);
 
-  // Filtro estatus: solo mostrar usuarios que tengan al menos un formado/pendiente
+  // Filtro estatus sobre celdas que SÍ aplican al usuario
   if (estatus === 'formado') {
-    usuarios = usuarios.filter(u => cursos.some(c => u.cursos[c.id]?.progreso === 1));
+    usuarios = usuarios.filter(u =>
+      cursos.some(c => u.cursosDelPlan.has(c.id) && u.cursosProgreso[c.id]?.progreso === 1)
+    );
   } else if (estatus === 'pendiente') {
-    usuarios = usuarios.filter(u => cursos.some(c => !u.cursos[c.id] || u.cursos[c.id].progreso !== 1));
+    usuarios = usuarios.filter(u =>
+      cursos.some(c => u.cursosDelPlan.has(c.id) && u.cursosProgreso[c.id]?.progreso !== 1)
+    );
   }
 
   renderTabla(usuarios, cursos);
@@ -1055,67 +1059,75 @@ function renderTabla(usuarios, cursos) {
   const cont = $('sf-tabla-container');
   if (!cont) return;
 
-  // Stats
+  // Stats: solo contar celdas que aplican al usuario
   let totalCeldas = 0, formadosCeldas = 0;
   usuarios.forEach(u => {
     cursos.forEach(c => {
+      if (!u.cursosDelPlan.has(c.id)) return; // N/A no cuenta
       totalCeldas++;
-      if (u.cursos[c.id]?.progreso === 1) formadosCeldas++;
+      if (u.cursosProgreso[c.id]?.progreso === 1) formadosCeldas++;
     });
   });
   const pctGral = totalCeldas > 0 ? Math.round((formadosCeldas/totalCeldas)*100) : 0;
-  const formadosTotales = usuarios.filter(u => cursos.every(c => u.cursos[c.id]?.progreso === 1)).length;
-  const pendTotales = usuarios.length - formadosTotales;
 
   const sv = (id,v) => { const el=$(id); if(el) el.textContent=v; };
-  sv('sf-pct', pctGral+'%');
-  sv('sf-formados', formadosCeldas);
-  sv('sf-pendientes', totalCeldas - formadosCeldas);
+  sv('sf-pct',       pctGral+'%');
+  sv('sf-formados',  formadosCeldas);
+  sv('sf-pendientes',totalCeldas - formadosCeldas);
   sv('sf-total-col', usuarios.length);
-  sv('sf-contador', usuarios.length + ' colaborador' + (usuarios.length!==1?'es':''));
+  sv('sf-contador',  usuarios.length + ' colaborador' + (usuarios.length!==1?'es':''));
   const bar = $('sf-bar');
-  if (bar) { bar.style.width = pctGral+'%'; bar.style.background = pctGral>=80?'var(--green)':pctGral>=40?'var(--amber)':'var(--red)'; }
+  if (bar) { bar.style.width=pctGral+'%'; bar.style.background=pctGral>=80?'var(--green)':pctGral>=40?'var(--amber)':'var(--red)'; }
 
   if (!usuarios.length || !cursos.length) {
     cont.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--tm);font-size:13px">No hay datos con el filtro seleccionado.</div>`;
     return;
   }
 
-  // % formado por curso (columna)
+  // % formado por curso (solo entre quienes tienen ese curso en su plan)
   const pctPorCurso = {};
   cursos.forEach(c => {
-    const f = usuarios.filter(u => u.cursos[c.id]?.progreso === 1).length;
-    pctPorCurso[c.id] = usuarios.length > 0 ? Math.round((f/usuarios.length)*100) : 0;
+    const aplican = usuarios.filter(u => u.cursosDelPlan.has(c.id));
+    const f = aplican.filter(u => u.cursosProgreso[c.id]?.progreso === 1).length;
+    pctPorCurso[c.id] = aplican.length > 0 ? Math.round((f/aplican.length)*100) : null;
   });
 
-  // Cabeceras de cursos (rotadas para ahorrar espacio)
+  // Cabeceras cursos
   const thCursos = cursos.map(c => {
     const pct = pctPorCurso[c.id];
-    const color = pct>=80?'var(--green)':pct>=40?'var(--amber)':'var(--red)';
-    const titulo = c.titulo.length > 30 ? c.titulo.substring(0,28)+'…' : c.titulo;
-    return `<th style="padding:0;min-width:90px;max-width:90px;border-right:1px solid var(--border);vertical-align:bottom">
-      <div style="writing-mode:vertical-rl;transform:rotate(180deg);padding:8px 6px;font-size:10px;font-weight:600;color:var(--tp);line-height:1.3;height:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${c.titulo}">${titulo}</div>
-      <div style="padding:4px 6px;text-align:center;border-top:1px solid var(--border);background:${pct>=80?'var(--green-bg)':pct>=40?'var(--amber-bg)':'var(--red-bg)'}">
-        <span style="font-size:10px;font-weight:700;color:${color}">${pct}%</span>
+    const color = pct===null?'var(--tm)':pct>=80?'var(--green)':pct>=40?'var(--amber)':'var(--red)';
+    const bg    = pct===null?'var(--bg)':pct>=80?'var(--green-bg)':pct>=40?'var(--amber-bg)':'var(--red-bg)';
+    const titulo = c.titulo.length > 28 ? c.titulo.substring(0,26)+'…' : c.titulo;
+    return `<th style="padding:0;min-width:88px;max-width:88px;border-right:1px solid var(--border);vertical-align:bottom">
+      <div style="writing-mode:vertical-rl;transform:rotate(180deg);padding:8px 5px;font-size:10px;font-weight:600;color:var(--tp);line-height:1.3;height:90px;white-space:nowrap;overflow:hidden" title="${c.titulo}">${titulo}</div>
+      <div style="padding:3px 5px;text-align:center;border-top:1px solid var(--border);background:${bg}">
+        <span style="font-size:10px;font-weight:700;color:${color}">${pct!==null?pct+'%':'—'}</span>
       </div>
     </th>`;
   }).join('');
 
-  // Filas de colaboradores
+  // Filas colaboradores
   const filas = usuarios.map((u, i) => {
+    // % solo sobre cursos que le aplican
+    const aplican = cursos.filter(c => u.cursosDelPlan.has(c.id));
+    const formados = aplican.filter(c => u.cursosProgreso[c.id]?.progreso === 1).length;
+    const pctU = aplican.length > 0 ? Math.round((formados/aplican.length)*100) : 0;
+    const colorU = pctU>=80?'var(--green)':pctU>=40?'var(--amber)':'var(--red)';
+
     const celdas = cursos.map(c => {
-      const prog = u.cursos[c.id];
-      const formado = prog?.progreso === 1;
-      return `<td style="padding:6px 8px;text-align:center;border-right:1px solid var(--border);white-space:nowrap">
+      if (!u.cursosDelPlan.has(c.id)) {
+        // No aplica → N/A
+        return `<td style="padding:6px 8px;text-align:center;border-right:1px solid var(--border);background:#fafafa">
+          <span style="font-size:9px;font-weight:600;color:var(--tm);letter-spacing:.3px">N/A</span>
+        </td>`;
+      }
+      const formado = u.cursosProgreso[c.id]?.progreso === 1;
+      return `<td style="padding:6px 8px;text-align:center;border-right:1px solid var(--border)">
         <span class="pill ${formado?'pill-done':'pill-red'}" style="font-size:9px;padding:2px 7px">
           ${formado?'Formado':'Pendiente'}
         </span>
       </td>`;
     }).join('');
-
-    const pctU = cursos.length > 0
-      ? Math.round(cursos.filter(c=>u.cursos[c.id]?.progreso===1).length/cursos.length*100) : 0;
-    const colorU = pctU>=80?'var(--green)':pctU>=40?'var(--amber)':'var(--red)';
 
     return `<tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='#f8faff'" onmouseout="this.style.background=''">
       <td style="padding:7px 1rem;white-space:nowrap;position:sticky;left:0;background:var(--card);z-index:1;border-right:1px solid var(--border);min-width:180px">
@@ -1186,11 +1198,15 @@ function exportarSeguimiento() {
   // Construir filas
   const headers = ['Colaborador', 'Cargo', 'Tienda', 'Área', '% Total', ...cursos.map(c => c.titulo)];
   const rows = usuarios.map(u => {
-    const pctU = cursos.length > 0
-      ? Math.round(cursos.filter(c => u.cursos[c.id]?.progreso === 1).length / cursos.length * 100) : 0;
+    const aplican = cursos.filter(c => u.cursosDelPlan.has(c.id));
+    const pctU = aplican.length > 0
+      ? Math.round(aplican.filter(c => u.cursosProgreso[c.id]?.progreso === 1).length / aplican.length * 100) : 0;
     return [
       u.nombre, u.cargo, u.tienda, u.area, pctU + '%',
-      ...cursos.map(c => u.cursos[c.id]?.progreso === 1 ? 'Formado' : 'Pendiente')
+      ...cursos.map(c => {
+        if (!u.cursosDelPlan.has(c.id)) return 'N/A';
+        return u.cursosProgreso[c.id]?.progreso === 1 ? 'Formado' : 'Pendiente';
+      })
     ];
   });
 
@@ -1224,62 +1240,125 @@ async function cargarSeguimiento() {
   if (cont) cont.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:2rem;color:var(--tm);font-size:13px"><div style="width:16px;height:16px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>Cargando datos desde Firebase...</div>`;
 
   try {
-    // 1. Cargar catálogo de cursos para obtener títulos reales
+    // 1. Catálogo de cursos → mapa ID:titulo
     const cursosSnap = await db.collection('cursos').get();
-    const cursosCatalogo = {};
+    const cursosCat = {};
     cursosSnap.forEach(c => {
       const d = c.data();
-      cursosCatalogo[c.id] = {
-        titulo:  d.titulo || d.nombre || c.id,
-        escuela: d.escuela || d.escuelaTitulo || '',
-      };
+      cursosCat[c.id] = { titulo: d.titulo || d.nombre || c.id };
     });
 
-    // 2. Cargar usuarios — solo los de tienda (VP Operaciones)
-    const usersSnap = await db.collection('users').limit(300).get();
+    // 2. Catálogo de escuelas → mapa ID:titulo
+    const escuelasSnap = await db.collection('escuelas').get();
+    const escuelasCat = {};
+    escuelasSnap.forEach(e => {
+      const d = e.data();
+      escuelasCat[e.id] = { titulo: d.titulo || e.id };
+    });
 
+    // Escuelas válidas (Comercial / Servicio / Excelencia)
+    const escuelasValidas = new Set(
+      Object.entries(escuelasCat)
+        .filter(([id, e]) => {
+          const t = e.titulo.toLowerCase();
+          return t.includes('comercial') || t.includes('servicio') || t.includes('excelencia');
+        })
+        .map(([id]) => id)
+    );
+
+    // 3. Planes de formación → mapa nivelCargo+pais → Set de cursoIds
+    const planesSnap = await db.collection('planesFormacion').get();
+    // planMap: key = "NIVELCARGO|PAIS" → { cursosIds: Set, escuela }
+    const planMap = {};
+    planesSnap.forEach(p => {
+      const d = p.data();
+      // Solo planes de VP OPERACIONES con escuelas válidas
+      const areasGen = d.areaGeneral || [];
+      if (!areasGen.includes('VP OPERACIONES')) return;
+
+      // Verificar que tenga al menos una escuela válida
+      const escuelasDelPlan = (d.escuelas || []).map(ref => {
+        const id = typeof ref === 'string' ? ref.split('/').pop() : ref.id || '';
+        return id;
+      });
+      const tieneEscuelaValida = escuelasDelPlan.some(id => escuelasValidas.has(id));
+      if (!tieneEscuelaValida) return;
+
+      // Extraer IDs de cursos
+      const cursosIds = (d.cursos || []).map(ref => {
+        return typeof ref === 'string' ? ref.split('/').pop() : ref.id || '';
+      }).filter(Boolean);
+
+      // Extraer escuela principal
+      const escuelaId = escuelasDelPlan.find(id => escuelasValidas.has(id)) || '';
+      const escuelaTitulo = escuelasCat[escuelaId]?.titulo || '';
+      let escuelaNombre = '';
+      if (escuelaTitulo.toLowerCase().includes('comercial')) escuelaNombre = 'Comercial';
+      else if (escuelaTitulo.toLowerCase().includes('servicio')) escuelaNombre = 'Servicio';
+      else if (escuelaTitulo.toLowerCase().includes('excelencia')) escuelaNombre = 'Excelencia';
+
+      // Registrar para cada combinación nivelCargo + pais
+      const niveles = d.nivelCargo || [];
+      const paises  = d.pais || ['VE'];
+      niveles.forEach(nivel => {
+        paises.forEach(pais => {
+          const key = `${nivel.toUpperCase()}|${pais.toUpperCase()}`;
+          if (!planMap[key]) planMap[key] = { cursosIds: new Set(), escuela: escuelaNombre };
+          cursosIds.forEach(id => planMap[key].cursosIds.add(id));
+          if (!planMap[key].escuela && escuelaNombre) planMap[key].escuela = escuelaNombre;
+        });
+      });
+    });
+
+    // 4. Usuarios con tienda (VP Operaciones)
+    const usersSnap = await db.collection('users').limit(300).get();
     const promesas = usersSnap.docs.map(async uDoc => {
       const u = uDoc.data();
-      if (!u.display_name && !u.nombre) return null;
-      // Solo usuarios con tienda asignada (VP Operaciones)
       if (!u.tienda || u.tienda.trim() === '') return null;
+      if (!u.display_name && !u.nombre) return null;
 
+      const nivelCargo = (u.nivelCargo || '').toUpperCase();
+      const pais = (u.pais || 'VE').toUpperCase();
+      const key = `${nivelCargo}|${pais}`;
+      const plan = planMap[key];
+
+      // Si no tiene plan de formación en VP Operaciones, omitir
+      if (!plan || plan.cursosIds.size === 0) return null;
+
+      // Leer cursosProgreso
       const progSnap = await db.collection('users').doc(uDoc.id).collection('cursosProgreso').get();
-      const cursos = {};
-      progSnap.forEach(p => { cursos[p.id] = p.data(); });
-
-      // Escuelas desde progresoEscuela
-      const escSnap = await db.collection('users').doc(uDoc.id).collection('progresoEscuela').get();
-      const escuelas = escSnap.docs.map(e => ({ id: e.id, titulo: e.data().titulo || e.id }));
+      const cursosProgreso = {};
+      progSnap.forEach(p => { cursosProgreso[p.id] = p.data(); });
 
       return {
-        id:      uDoc.id,
-        nombre:  u.display_name || ((u.nombre||'')+' '+(u.apellido||'')).trim(),
-        cargo:   u.cargo || '—',
-        tienda:  u.tienda || '—',
-        area:    u.area || u.areaGeneral || '—',
-        estado:  u.estado || 'Activo',
-        cursos,
-        escuelas
+        id:         uDoc.id,
+        nombre:     u.display_name || ((u.nombre||'')+' '+(u.apellido||'')).trim(),
+        cargo:      u.cargo || '—',
+        nivelCargo: nivelCargo,
+        tienda:     u.tienda,
+        area:       u.area || u.areaGeneral || '—',
+        pais:       u.pais || 'VE',
+        cursosDelPlan: plan.cursosIds,   // Set de IDs que le corresponden
+        escuela:    plan.escuela,
+        cursosProgreso                   // mapa ID → data
       };
     });
 
     segData = (await Promise.all(promesas)).filter(Boolean);
 
-    // 3. Construir columnas con títulos reales del catálogo
+    // 5. Construir columnas = union de todos los cursos de todos los planes
+    //    Solo cursos que pertenecen a algún plan cargado
     const cursosMap = {};
     segData.forEach(u => {
-      Object.keys(u.cursos).forEach(id => {
-        if (!cursosMap[id]) {
-          const cat = cursosCatalogo[id];
-          const titulo = cat?.titulo || id;
-          // Inferir escuela del título o del catálogo
-          let escuela = cat?.escuela || '';
+      u.cursosDelPlan.forEach(id => {
+        if (!cursosMap[id] && cursosCat[id]) {
+          const titulo = cursosCat[id].titulo;
+          let escuela = u.escuela || '';
           if (!escuela) {
             const t = titulo.toLowerCase();
             if (t.includes('comercial')) escuela = 'Comercial';
-            else if (t.includes('excelencia')) escuela = 'Excelencia';
             else if (t.includes('servicio')) escuela = 'Servicio';
+            else if (t.includes('excelencia')) escuela = 'Excelencia';
           }
           cursosMap[id] = { id, titulo, escuela };
         }
@@ -1287,18 +1366,18 @@ async function cargarSeguimiento() {
     });
     segCursosAll = Object.values(cursosMap).sort((a,b) => a.titulo.localeCompare(b.titulo));
 
-    // 4. Poblar filtros
+    // 6. Poblar filtros
     const fill = (id, vals, label) => {
       const el = $(id);
       if (el) el.innerHTML = `<option value="">${label}</option>` + vals.map(v=>`<option value="${v}">${v}</option>`).join('');
     };
-    const uniq = (arr) => [...new Set(arr.filter(v=>v&&v!=='—'))].sort();
+    const uniq = arr => [...new Set(arr.filter(v=>v&&v!=='—'))].sort();
 
     const escuelasDisp = [...new Set(segCursosAll.map(c=>c.escuela).filter(Boolean))].sort();
-    fill('sf-escuela', escuelasDisp, 'Todas las escuelas');
-    fill('sf-area',   uniq(segData.map(u=>u.area)),   'Todas las áreas');
-    fill('sf-tienda', uniq(segData.map(u=>u.tienda)), 'Todas las tiendas');
-    fill('sf-cargo',  uniq(segData.map(u=>u.cargo)),  'Todos los cargos');
+    fill('sf-escuela', escuelasDisp,          'Todas las escuelas');
+    fill('sf-area',    uniq(segData.map(u=>u.area)),   'Todas las áreas');
+    fill('sf-tienda',  uniq(segData.map(u=>u.tienda)), 'Todas las tiendas');
+    fill('sf-cargo',   uniq(segData.map(u=>u.cargo)),  'Todos los cargos');
 
     filtrarSeg();
 
