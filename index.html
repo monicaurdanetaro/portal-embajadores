@@ -557,45 +557,80 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
 
   <!-- ══ SEGUIMIENTO ══ -->
   <div class="content pane" id="pane-seguimiento">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.5rem">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem">
       <div>
         <span class="sec-eye">Academia Farmatodo</span>
         <h2 class="sec-ttl">Seguimiento de capacitaciones</h2>
-        <p class="sec-sub">Progreso real por escuela, programa y colaborador.</p>
+        <p class="sec-sub">Estatus de formación por colaborador y curso.</p>
       </div>
       <button class="btn btn-o btn-sm" onclick="cargarSeguimiento()" style="margin-top:.3rem">↻ Actualizar</button>
     </div>
 
-    <!-- Filtros -->
-    <div style="display:flex;gap:8px;margin-bottom:1.2rem;flex-wrap:wrap;align-items:center">
-      <div style="display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-        <select id="seg-filtro-tienda" onchange="filtrarSeguimiento()" style="border:none;background:none;font-family:var(--fb);font-size:12px;color:var(--ts);outline:none;cursor:pointer">
+    <!-- Filtros macro -->
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+      <div style="display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        <select id="sf-escuela" onchange="filtrarSeg()" style="border:none;background:none;font-family:var(--fb);font-size:12px;color:var(--ts);outline:none;cursor:pointer;max-width:180px">
+          <option value="">Todas las escuelas</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8"/></svg>
+        <select id="sf-area" onchange="filtrarSeg()" style="border:none;background:none;font-family:var(--fb);font-size:12px;color:var(--ts);outline:none;cursor:pointer;max-width:150px">
+          <option value="">Todas las áreas</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <select id="sf-tienda" onchange="filtrarSeg()" style="border:none;background:none;font-family:var(--fb);font-size:12px;color:var(--ts);outline:none;cursor:pointer;max-width:180px">
           <option value="">Todas las tiendas</option>
         </select>
       </div>
-      <div style="display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <select id="seg-filtro-cargo" onchange="filtrarSeguimiento()" style="border:none;background:none;font-family:var(--fb);font-size:12px;color:var(--ts);outline:none;cursor:pointer">
+      <div style="display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <select id="sf-cargo" onchange="filtrarSeg()" style="border:none;background:none;font-family:var(--fb);font-size:12px;color:var(--ts);outline:none;cursor:pointer;max-width:160px">
           <option value="">Todos los cargos</option>
         </select>
       </div>
-      <span id="seg-contador" style="font-size:11px;color:var(--tm);margin-left:auto"></span>
+      <div style="display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <select id="sf-estatus" onchange="filtrarSeg()" style="border:none;background:none;font-family:var(--fb);font-size:12px;color:var(--ts);outline:none;cursor:pointer">
+          <option value="">Todos los estatus</option>
+          <option value="formado">Formados</option>
+          <option value="pendiente">Pendientes</option>
+        </select>
+      </div>
+      <span id="sf-contador" style="font-size:11px;color:var(--tm);margin-left:auto;font-weight:500"></span>
     </div>
 
-    <!-- Stats -->
-    <div class="stats" style="margin-bottom:1.4rem" id="seg-stats">
-      <div class="stat"><div class="stat-n" id="seg-pct-gral">—</div><div class="stat-l">Completitud general</div><div class="stat-bar"><div class="stat-fill green" id="seg-bar-gral" style="width:0%"></div></div></div>
-      <div class="stat"><div class="stat-n" id="seg-completos">—</div><div class="stat-l">Completaron todo</div><div class="stat-bar"><div class="stat-fill green" id="seg-bar-comp" style="width:0%"></div></div></div>
-      <div class="stat"><div class="stat-n" id="seg-pendientes" style="color:#f59e0b">—</div><div class="stat-l">Con pendientes</div><div class="stat-bar"><div class="stat-fill amber" id="seg-bar-pend" style="width:0%"></div></div></div>
-      <div class="stat"><div class="stat-n" id="seg-sin-inicio" style="color:var(--red)">—</div><div class="stat-l">Sin iniciar</div><div class="stat-bar"><div class="stat-fill" id="seg-bar-sin" style="width:0%;background:var(--red)"></div></div></div>
+    <!-- % cumplimiento global -->
+    <div class="card" style="margin-bottom:1rem;padding:0">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr)">
+        <div style="padding:.9rem 1rem;border-right:1px solid var(--border)">
+          <div style="font-family:var(--fd);font-size:1.5rem;font-weight:800;color:var(--navy)" id="sf-pct">—</div>
+          <div style="font-size:11px;color:var(--tm);margin-top:2px">Cumplimiento global</div>
+          <div style="height:3px;border-radius:3px;background:var(--bg);margin-top:6px;overflow:hidden"><div id="sf-bar" style="height:100%;width:0%;background:var(--green);border-radius:3px;transition:width .5s"></div></div>
+        </div>
+        <div style="padding:.9rem 1rem;border-right:1px solid var(--border)">
+          <div style="font-family:var(--fd);font-size:1.5rem;font-weight:800;color:var(--green)" id="sf-formados">—</div>
+          <div style="font-size:11px;color:var(--tm);margin-top:2px">Formados</div>
+        </div>
+        <div style="padding:.9rem 1rem;border-right:1px solid var(--border)">
+          <div style="font-family:var(--fd);font-size:1.5rem;font-weight:800;color:var(--amber)" id="sf-pendientes">—</div>
+          <div style="font-size:11px;color:var(--tm);margin-top:2px">Pendientes</div>
+        </div>
+        <div style="padding:.9rem 1rem">
+          <div style="font-family:var(--fd);font-size:1.5rem;font-weight:800;color:var(--blue)" id="sf-total-col">—</div>
+          <div style="font-size:11px;color:var(--tm);margin-top:2px">Colaboradores</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Vista por Escuelas → Programas → Colaboradores -->
-    <div id="seg-escuelas-container">
+    <!-- Tabla dinámica -->
+    <div id="sf-tabla-container">
       <div style="display:flex;align-items:center;gap:10px;padding:2rem;color:var(--tm);font-size:13px">
         <div style="width:16px;height:16px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>
-        Cargando progreso desde Firebase...
+        Cargando datos desde Firebase...
       </div>
     </div>
   </div>
@@ -985,189 +1020,215 @@ firebase.initializeApp({
 const db = firebase.firestore();
 
 // ── SEGUIMIENTO FIREBASE (solo lectura) ──────────
-let segData = [];
+// ── SEGUIMIENTO ──────────────────────────────────
+let segData = [];        // todos los usuarios con sus cursos
+let segCursosAll = [];   // lista ordenada de todos los cursos (columnas)
 
-function colorPct(p) { return p>=80?'var(--green)':p>=40?'var(--amber)':'var(--red)'; }
+function filtrarSeg() {
+  const escuela = $('sf-escuela')?.value || '';
+  const area    = $('sf-area')?.value    || '';
+  const tienda  = $('sf-tienda')?.value  || '';
+  const cargo   = $('sf-cargo')?.value   || '';
+  const estatus = $('sf-estatus')?.value || '';
 
-function pctBar(p, color) {
-  return `<div style="display:flex;align-items:center;gap:6px;min-width:120px">
-    <div style="flex:1;height:5px;background:var(--bg);border-radius:4px;overflow:hidden">
-      <div style="height:100%;width:${p}%;background:${color};border-radius:4px"></div>
-    </div>
-    <span style="font-size:11px;font-weight:700;color:${color};min-width:28px">${p}%</span>
+  let usuarios = [...segData];
+  if (tienda)  usuarios = usuarios.filter(u => u.tienda === tienda);
+  if (area)    usuarios = usuarios.filter(u => u.area === area);
+  if (cargo)   usuarios = usuarios.filter(u => u.cargo === cargo);
+
+  // Filtro por escuela → solo columnas de esa escuela
+  let cursos = [...segCursosAll];
+  if (escuela) cursos = cursos.filter(c => c.escuela === escuela);
+
+  // Filtro estatus: solo mostrar usuarios que tengan al menos un formado/pendiente
+  if (estatus === 'formado') {
+    usuarios = usuarios.filter(u => cursos.some(c => u.cursos[c.id]?.progreso === 1));
+  } else if (estatus === 'pendiente') {
+    usuarios = usuarios.filter(u => cursos.some(c => !u.cursos[c.id] || u.cursos[c.id].progreso !== 1));
+  }
+
+  renderTabla(usuarios, cursos);
+}
+
+function renderTabla(usuarios, cursos) {
+  const cont = $('sf-tabla-container');
+  if (!cont) return;
+
+  // Stats
+  let totalCeldas = 0, formadosCeldas = 0;
+  usuarios.forEach(u => {
+    cursos.forEach(c => {
+      totalCeldas++;
+      if (u.cursos[c.id]?.progreso === 1) formadosCeldas++;
+    });
+  });
+  const pctGral = totalCeldas > 0 ? Math.round((formadosCeldas/totalCeldas)*100) : 0;
+  const formadosTotales = usuarios.filter(u => cursos.every(c => u.cursos[c.id]?.progreso === 1)).length;
+  const pendTotales = usuarios.length - formadosTotales;
+
+  const sv = (id,v) => { const el=$(id); if(el) el.textContent=v; };
+  sv('sf-pct', pctGral+'%');
+  sv('sf-formados', formadosCeldas);
+  sv('sf-pendientes', totalCeldas - formadosCeldas);
+  sv('sf-total-col', usuarios.length);
+  sv('sf-contador', usuarios.length + ' colaborador' + (usuarios.length!==1?'es':''));
+  const bar = $('sf-bar');
+  if (bar) { bar.style.width = pctGral+'%'; bar.style.background = pctGral>=80?'var(--green)':pctGral>=40?'var(--amber)':'var(--red)'; }
+
+  if (!usuarios.length || !cursos.length) {
+    cont.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--tm);font-size:13px">No hay datos con el filtro seleccionado.</div>`;
+    return;
+  }
+
+  // % formado por curso (columna)
+  const pctPorCurso = {};
+  cursos.forEach(c => {
+    const f = usuarios.filter(u => u.cursos[c.id]?.progreso === 1).length;
+    pctPorCurso[c.id] = usuarios.length > 0 ? Math.round((f/usuarios.length)*100) : 0;
+  });
+
+  // Cabeceras de cursos (rotadas para ahorrar espacio)
+  const thCursos = cursos.map(c => {
+    const pct = pctPorCurso[c.id];
+    const color = pct>=80?'var(--green)':pct>=40?'var(--amber)':'var(--red)';
+    const titulo = c.titulo.length > 30 ? c.titulo.substring(0,28)+'…' : c.titulo;
+    return `<th style="padding:0;min-width:90px;max-width:90px;border-right:1px solid var(--border);vertical-align:bottom">
+      <div style="writing-mode:vertical-rl;transform:rotate(180deg);padding:8px 6px;font-size:10px;font-weight:600;color:var(--tp);line-height:1.3;height:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${c.titulo}">${titulo}</div>
+      <div style="padding:4px 6px;text-align:center;border-top:1px solid var(--border);background:${pct>=80?'var(--green-bg)':pct>=40?'var(--amber-bg)':'var(--red-bg)'}">
+        <span style="font-size:10px;font-weight:700;color:${color}">${pct}%</span>
+      </div>
+    </th>`;
+  }).join('');
+
+  // Filas de colaboradores
+  const filas = usuarios.map((u, i) => {
+    const celdas = cursos.map(c => {
+      const prog = u.cursos[c.id];
+      const formado = prog?.progreso === 1;
+      return `<td style="padding:6px 8px;text-align:center;border-right:1px solid var(--border);white-space:nowrap">
+        <span class="pill ${formado?'pill-done':'pill-red'}" style="font-size:9px;padding:2px 7px">
+          ${formado?'Formado':'Pendiente'}
+        </span>
+      </td>`;
+    }).join('');
+
+    const pctU = cursos.length > 0
+      ? Math.round(cursos.filter(c=>u.cursos[c.id]?.progreso===1).length/cursos.length*100) : 0;
+    const colorU = pctU>=80?'var(--green)':pctU>=40?'var(--amber)':'var(--red)';
+
+    return `<tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='#f8faff'" onmouseout="this.style.background=''">
+      <td style="padding:7px 1rem;white-space:nowrap;position:sticky;left:0;background:var(--card);z-index:1;border-right:1px solid var(--border);min-width:180px">
+        <div style="display:flex;align-items:center;gap:7px">
+          <div style="width:22px;height:22px;border-radius:50%;background:${col(i)};color:#fff;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${ini(u.nombre)}</div>
+          <div>
+            <div style="font-size:11.5px;font-weight:600;color:var(--tp)">${u.nombre}</div>
+            <div style="font-size:10px;color:var(--tm)">${u.cargo}</div>
+          </div>
+        </div>
+      </td>
+      <td style="padding:7px 8px;font-size:11px;color:var(--ts);white-space:nowrap;border-right:1px solid var(--border)">${u.tienda}</td>
+      <td style="padding:7px 8px;font-size:11px;color:var(--ts);white-space:nowrap;border-right:1px solid var(--border)">${u.area||'—'}</td>
+      <td style="padding:7px 10px;border-right:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:5px;min-width:70px">
+          <div style="flex:1;height:4px;background:var(--bg);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${pctU}%;background:${colorU};border-radius:3px"></div>
+          </div>
+          <span style="font-size:10px;font-weight:700;color:${colorU}">${pctU}%</span>
+        </div>
+      </td>
+      ${celdas}
+    </tr>`;
+  }).join('');
+
+  cont.innerHTML = `<div style="overflow-x:auto;border-radius:12px;border:1px solid var(--border)">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;background:var(--card)">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border);background:var(--bg)">
+          <th style="text-align:left;padding:8px 1rem;color:var(--tm);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;position:sticky;left:0;background:var(--bg);z-index:2;min-width:180px;border-right:1px solid var(--border)">Colaborador</th>
+          <th style="text-align:left;padding:8px 8px;color:var(--tm);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-right:1px solid var(--border);white-space:nowrap">Tienda</th>
+          <th style="text-align:left;padding:8px 8px;color:var(--tm);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-right:1px solid var(--border)">Área</th>
+          <th style="text-align:left;padding:8px 10px;color:var(--tm);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-right:1px solid var(--border);white-space:nowrap">% Total</th>
+          ${thCursos}
+        </tr>
+      </thead>
+      <tbody>${filas}</tbody>
+    </table>
   </div>`;
 }
 
-function toggleEsc(id) {
-  const el=$(id), icon=$('icon-'+id);
-  if(!el) return;
-  const open=el.style.display!=='none';
-  el.style.display=open?'none':'block';
-  if(icon) icon.textContent=open?'▶':'▼';
-}
-function toggleProg(id) {
-  const el=$(id), icon=$('icon-'+id);
-  if(!el) return;
-  const open=el.style.display!=='none';
-  el.style.display=open?'none':'block';
-  if(icon) icon.textContent=open?'▶':'▼';
-}
-
-function filtrarSeguimiento() {
-  const tienda=$('seg-filtro-tienda')?.value||'';
-  const cargo=$('seg-filtro-cargo')?.value||'';
-  let lista=[...segData];
-  if(tienda) lista=lista.filter(u=>u.tienda===tienda);
-  if(cargo)  lista=lista.filter(u=>u.cargo===cargo);
-  renderEscuelas(lista);
-}
-
-function renderEscuelas(usuarios) {
-  const cont=$('seg-escuelas-container');
-  if(!cont) return;
-  if(!usuarios.length){
-    cont.innerHTML=`<div style="padding:2rem;text-align:center;color:var(--tm);font-size:13px">No se encontraron usuarios con el filtro seleccionado.</div>`;
-    return;
-  }
-  const total=usuarios.length;
-  const pctGral=Math.round(usuarios.reduce((s,u)=>s+u.pctGral,0)/total);
-  const comp=usuarios.filter(u=>u.pctGral===100).length;
-  const pend=usuarios.filter(u=>u.pctGral>0&&u.pctGral<100).length;
-  const sinI=usuarios.filter(u=>u.pctGral===0).length;
-  const sv=(id,v)=>{const el=$(id);if(el)el.textContent=v;};
-  const sb=(id,v)=>{const el=$(id);if(el)el.style.width=v+'%';};
-  sv('seg-pct-gral',pctGral+'%'); sb('seg-bar-gral',pctGral);
-  sv('seg-completos',comp);       sb('seg-bar-comp',Math.round(comp/total*100));
-  sv('seg-pendientes',pend);      sb('seg-bar-pend',Math.round(pend/total*100));
-  sv('seg-sin-inicio',sinI);      sb('seg-bar-sin',Math.round(sinI/total*100));
-  const cnt=$('seg-contador'); if(cnt) cnt.textContent=total+' colaborador'+(total!==1?'es':'');
-
-  // Agrupar por escuela
-  const escMap={};
-  usuarios.forEach(u=>{
-    u.escuelas.forEach(e=>{
-      if(!escMap[e.id]) escMap[e.id]={titulo:e.titulo,usuarios:[],pcts:[]};
-      escMap[e.id].usuarios.push(u);
-      escMap[e.id].pcts.push(e.progreso);
-    });
-  });
-
-  const html=Object.entries(escMap).map(([escId,esc])=>{
-    const pctEsc=Math.round(esc.pcts.reduce((s,p)=>s+p,0)/esc.pcts.length);
-    const colorEsc=colorPct(pctEsc);
-
-    // Programas de esta escuela
-    const progMap={};
-    esc.usuarios.forEach(u=>{
-      u.programas.filter(p=>p.titulo&&p.titulo.toLowerCase().includes(
-        (esc.titulo||'').split('-')[0].toLowerCase().trim().substring(0,8)
-      )).forEach(p=>{
-        if(!progMap[p.id]) progMap[p.id]={titulo:p.titulo,usuarios:[],pcts:[]};
-        progMap[p.id].usuarios.push(u);
-        progMap[p.id].pcts.push(p.progreso);
-      });
-    });
-
-    const progsHTML=Object.entries(progMap).map(([pId,prog])=>{
-      const pctP=Math.round(prog.pcts.reduce((s,p)=>s+p,0)/prog.pcts.length);
-      const colorP=colorPct(pctP);
-      const nombreProg=(prog.titulo.split('|')[0]||prog.titulo).trim();
-      const colabsHTML=prog.usuarios.map((u,i)=>{
-        const up=u.programas.find(p=>p.id===pId);
-        const pctU=up?up.progreso:0;
-        const colorU=colorPct(pctU);
-        return `<tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:7px 1rem"><div style="display:flex;align-items:center;gap:7px">
-            <div style="width:22px;height:22px;border-radius:50%;background:${col(i)};color:#fff;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${ini(u.nombre)}</div>
-            <div style="font-size:12px;font-weight:600;color:var(--tp)">${u.nombre}</div>
-          </div></td>
-          <td style="padding:7px 1rem;font-size:11px;color:var(--ts)">${u.cargo}</td>
-          <td style="padding:7px 1rem;font-size:11px;color:var(--ts)">${u.tienda}</td>
-          <td style="padding:7px 1rem">${pctBar(pctU,colorU)}</td>
-          <td style="padding:7px 1rem;text-align:center"><span class="pill ${pctU===100?'pill-done':pctU>0?'pill-live':'pill-pend'}">${pctU===100?'Completo':pctU>0?'En curso':'Sin iniciar'}</span></td>
-        </tr>`;
-      }).join('');
-      return `<div style="border-top:1px solid var(--border)">
-        <div onclick="toggleProg('prog-${pId}')" style="display:flex;align-items:center;gap:10px;padding:9px 1.5rem;cursor:pointer;background:var(--bg)" onmouseover="this.style.background='#edf0fb'" onmouseout="this.style.background='var(--bg)'">
-          <span id="icon-prog-${pId}" style="font-size:10px;color:var(--tm)">▶</span>
-          <span style="font-size:12.5px;font-weight:600;color:var(--tp);flex:1">${nombreProg}</span>
-          <span style="font-size:11px;color:var(--tm);margin-right:10px">${prog.usuarios.length} personas</span>
-          ${pctBar(pctP,colorP)}
-        </div>
-        <div id="prog-${pId}" style="display:none">
-          <table style="width:100%;border-collapse:collapse">
-            <thead><tr style="background:#f8faff;border-bottom:1px solid var(--border)">
-              <th style="text-align:left;padding:6px 1rem;color:var(--tm);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Colaborador</th>
-              <th style="text-align:left;padding:6px 1rem;color:var(--tm);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Cargo</th>
-              <th style="text-align:left;padding:6px 1rem;color:var(--tm);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Tienda</th>
-              <th style="text-align:left;padding:6px 1rem;color:var(--tm);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Progreso</th>
-              <th style="text-align:center;padding:6px 1rem;color:var(--tm);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Estado</th>
-            </tr></thead>
-            <tbody>${colabsHTML}</tbody>
-          </table>
-        </div>
-      </div>`;
-    }).join('');
-
-    return `<div class="card" style="margin-bottom:.8rem">
-      <div onclick="toggleEsc('esc-${escId}')" style="display:flex;align-items:center;gap:12px;padding:1rem 1.2rem;cursor:pointer" onmouseover="this.style.background='#f8faff'" onmouseout="this.style.background=''">
-        <div style="width:36px;height:36px;border-radius:9px;background:${colorEsc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${colorEsc}" stroke-width="2" stroke-linecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
-        </div>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:700;color:var(--navy)">${esc.titulo}</div>
-          <div style="font-size:11px;color:var(--tm);margin-top:1px">${esc.usuarios.length} colaboradores · ${Object.keys(progMap).length} programas</div>
-        </div>
-        ${pctBar(pctEsc,colorEsc)}
-        <span id="icon-esc-${escId}" style="font-size:10px;color:var(--tm);margin-left:8px">▶</span>
-      </div>
-      <div id="esc-${escId}" style="display:none;border-top:1px solid var(--border)">
-        ${progsHTML||'<div style="padding:1rem;color:var(--tm);font-size:12px;text-align:center">No hay programas disponibles</div>'}
-      </div>
-    </div>`;
-  }).join('');
-
-  cont.innerHTML=html||`<div style="padding:2rem;text-align:center;color:var(--tm);font-size:13px">No hay datos de escuelas.</div>`;
-}
-
 async function cargarSeguimiento() {
-  const cont=$('seg-escuelas-container');
-  if(cont) cont.innerHTML=`<div style="display:flex;align-items:center;gap:10px;padding:2rem;color:var(--tm);font-size:13px"><div style="width:16px;height:16px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>Cargando datos desde Firebase...</div>`;
+  const cont = $('sf-tabla-container');
+  if (cont) cont.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:2rem;color:var(--tm);font-size:13px"><div style="width:16px;height:16px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>Cargando datos desde Firebase...</div>`;
+
   try {
-    const usersSnap=await db.collection('users').limit(300).get();
-    const promesas=usersSnap.docs.map(async uDoc=>{
-      const u=uDoc.data();
-      if(!u.display_name&&!u.nombre) return null;
-      const [escSnap,progSnap]=await Promise.all([
-        db.collection('users').doc(uDoc.id).collection('progresoEscuela').get(),
-        db.collection('users').doc(uDoc.id).collection('progresoProgramas').get()
-      ]);
-      const escuelas=escSnap.docs.map(e=>{
-        const d=e.data();
-        return {id:e.id,titulo:d.titulo||e.id,progreso:Math.round((d.progreso||0)*100)};
-      });
-      const programas=progSnap.docs.map(p=>{
-        const d=p.data();
-        return {id:p.id,titulo:d.titulo||'',progreso:Math.round((d.progreso||0)*100)};
-      });
-      const pctGral=escuelas.length>0?Math.round(escuelas.reduce((s,e)=>s+e.progreso,0)/escuelas.length):0;
+    const usersSnap = await db.collection('users').limit(300).get();
+
+    const promesas = usersSnap.docs.map(async uDoc => {
+      const u = uDoc.data();
+      if (!u.display_name && !u.nombre) return null;
+
+      const progSnap = await db.collection('users').doc(uDoc.id).collection('cursosProgreso').get();
+      const cursos = {};
+      progSnap.forEach(p => { cursos[p.id] = p.data(); });
+
+      // Escuelas desde progresoEscuela
+      const escSnap = await db.collection('users').doc(uDoc.id).collection('progresoEscuela').get();
+      const escuelas = escSnap.docs.map(e => ({ id: e.id, titulo: e.data().titulo || e.id }));
+
       return {
-        id:uDoc.id,
-        nombre:u.display_name||((u.nombre||'')+' '+(u.apellido||'')).trim(),
-        cargo:u.cargo||'—',tienda:u.tienda||'—',email:u.email||'',estado:u.estado||'Activo',
-        pctGral,escuelas,programas
+        id:      uDoc.id,
+        nombre:  u.display_name || ((u.nombre||'')+' '+(u.apellido||'')).trim(),
+        cargo:   u.cargo || '—',
+        tienda:  u.tienda || '—',
+        area:    u.area || u.areaGeneral || '—',
+        estado:  u.estado || 'Activo',
+        cursos,
+        escuelas
       };
     });
-    segData=(await Promise.all(promesas)).filter(Boolean);
-    const tiendas=[...new Set(segData.map(u=>u.tienda).filter(t=>t&&t!=='—'))].sort();
-    const cargos=[...new Set(segData.map(u=>u.cargo).filter(t=>t&&t!=='—'))].sort();
-    const selT=$('seg-filtro-tienda'),selC=$('seg-filtro-cargo');
-    if(selT) selT.innerHTML='<option value="">Todas las tiendas</option>'+tiendas.map(t=>`<option value="${t}">${t}</option>`).join('');
-    if(selC) selC.innerHTML='<option value="">Todos los cargos</option>'+cargos.map(c=>`<option value="${c}">${c}</option>`).join('');
-    renderEscuelas(segData);
+
+    segData = (await Promise.all(promesas)).filter(Boolean);
+
+    // Construir lista de cursos únicos (columnas) con su escuela
+    const cursosMap = {};
+    segData.forEach(u => {
+      Object.entries(u.cursos).forEach(([id, c]) => {
+        if (!cursosMap[id]) {
+          const titulo = c.titulo || c.cursoTitulo || c.nombre || id;
+          // Inferir escuela del título
+          let escuela = '';
+          if (titulo.toLowerCase().includes('comercial')) escuela = 'Comercial';
+          else if (titulo.toLowerCase().includes('excelencia')) escuela = 'Excelencia';
+          else if (titulo.toLowerCase().includes('servicio')) escuela = 'Servicio';
+          cursosMap[id] = { id, titulo, escuela };
+        }
+      });
+    });
+    segCursosAll = Object.values(cursosMap).sort((a,b) => a.titulo.localeCompare(b.titulo));
+
+    // Poblar filtros
+    const fill = (id, vals, label) => {
+      const el = $(id);
+      if (el) el.innerHTML = `<option value="">${label}</option>` + vals.map(v=>`<option value="${v}">${v}</option>`).join('');
+    };
+    const uniq = (arr) => [...new Set(arr.filter(v=>v&&v!=='—'))].sort();
+
+    // Escuelas desde los datos de cursosProgreso
+    const escuelasDisp = [...new Set(segCursosAll.map(c=>c.escuela).filter(Boolean))].sort();
+    fill('sf-escuela', escuelasDisp, 'Todas las escuelas');
+    fill('sf-area',   uniq(segData.map(u=>u.area)),   'Todas las áreas');
+    fill('sf-tienda', uniq(segData.map(u=>u.tienda)), 'Todas las tiendas');
+    fill('sf-cargo',  uniq(segData.map(u=>u.cargo)),  'Todos los cargos');
+
+    filtrarSeg();
+
   } catch(err) {
-    console.error('Error seguimiento:',err);
-    if(cont) cont.innerHTML=`<div style="padding:2rem;text-align:center"><div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:6px">No se pudo cargar el progreso</div><div style="font-size:12px;color:var(--tm);margin-bottom:10px">${err.message}</div><button class="btn btn-o btn-sm" onclick="cargarSeguimiento()">Reintentar</button></div>`;
+    console.error('Error seguimiento:', err);
+    if (cont) cont.innerHTML = `<div style="padding:2rem;text-align:center">
+      <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:6px">No se pudo cargar</div>
+      <div style="font-size:12px;color:var(--tm);margin-bottom:10px">${err.message}</div>
+      <button class="btn btn-o btn-sm" onclick="cargarSeguimiento()">Reintentar</button>
+    </div>`;
   }
 }
 
