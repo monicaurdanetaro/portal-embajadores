@@ -1243,138 +1243,79 @@ async function cargarSeguimiento() {
     // 1. Catálogo de cursos → mapa ID:titulo
     const cursosSnap = await db.collection('cursos').get();
     const cursosCat = {};
-    cursosSnap.forEach(c => {
-      const d = c.data();
-      cursosCat[c.id] = { titulo: d.titulo || d.nombre || c.id };
-    });
+    cursosSnap.forEach(c => { cursosCat[c.id] = c.data().titulo || c.data().nombre || c.id; });
 
-    // 2. Catálogo de escuelas → mapa ID:titulo
+    // 2. Escuelas → extraer cursosInProgramas por escuela válida
     const escuelasSnap = await db.collection('escuelas').get();
-    const escuelasCat = {};
+    const cursosAEscuela = {}; // cursoId → 'Comercial'|'Servicio'|'Excelencia'
     escuelasSnap.forEach(e => {
       const d = e.data();
-      escuelasCat[e.id] = { titulo: d.titulo || e.id };
+      const t = (d.titulo || '').toLowerCase();
+      let nombre = '';
+      if (t.includes('comercial'))  nombre = 'Comercial';
+      else if (t.includes('servicio'))   nombre = 'Servicio';
+      else if (t.includes('excelencia')) nombre = 'Excelencia';
+      if (!nombre) return;
+      const refs = d.cursosInProgramas || d.cursos || [];
+      refs.forEach(ref => {
+        const id = typeof ref === 'string' ? ref.split('/').pop() : (ref.id || (ref.path||'').split('/').pop() || '');
+        if (id) cursosAEscuela[id] = nombre;
+      });
     });
 
-    // Escuelas válidas (Comercial / Servicio / Excelencia)
-    const escuelasValidas = new Set(
-      Object.entries(escuelasCat)
-        .filter(([id, e]) => {
-          const t = e.titulo.toLowerCase();
-          return t.includes('comercial') || t.includes('servicio') || t.includes('excelencia');
-        })
-        .map(([id]) => id)
-    );
-
-    // 3. Planes de formación → mapa nivelCargo+pais → Set de cursoIds
+    // 3. Planes → mapa nivelCargo|pais → Set de cursoIds válidos (de escuelas)
     const planesSnap = await db.collection('planesFormacion').get();
-    // planMap: key = "NIVELCARGO|PAIS" → { cursosIds: Set, escuela }
     const planMap = {};
     planesSnap.forEach(p => {
       const d = p.data();
-      // Solo planes de VP OPERACIONES con escuelas válidas
-      const areasGen = d.areaGeneral || [];
-      if (!areasGen.includes('VP OPERACIONES')) return;
-
-      // Verificar que tenga al menos una escuela válida
-      const escuelasDelPlan = (d.escuelas || []).map(ref => {
-        const id = typeof ref === 'string' ? ref.split('/').pop() : ref.id || '';
-        return id;
-      });
-      const tieneEscuelaValida = escuelasDelPlan.some(id => escuelasValidas.has(id));
-      if (!tieneEscuelaValida) return;
-
-      // Extraer IDs de cursos
-      const cursosIds = (d.cursos || []).map(ref => {
-        return typeof ref === 'string' ? ref.split('/').pop() : ref.id || '';
-      }).filter(Boolean);
-
-      // Extraer escuela principal
-      const escuelaId = escuelasDelPlan.find(id => escuelasValidas.has(id)) || '';
-      const escuelaTitulo = escuelasCat[escuelaId]?.titulo || '';
-      let escuelaNombre = '';
-      if (escuelaTitulo.toLowerCase().includes('comercial')) escuelaNombre = 'Comercial';
-      else if (escuelaTitulo.toLowerCase().includes('servicio')) escuelaNombre = 'Servicio';
-      else if (escuelaTitulo.toLowerCase().includes('excelencia')) escuelaNombre = 'Excelencia';
-
-      // Registrar para cada combinación nivelCargo + pais
-      const niveles = d.nivelCargo || [];
-      const paises  = d.pais || ['VE'];
-      niveles.forEach(nivel => {
-        paises.forEach(pais => {
+      if (!(d.areaGeneral||[]).includes('VP OPERACIONES')) return;
+      const cursosValidos = (d.cursos||[])
+        .map(ref => typeof ref==='string' ? ref.split('/').pop() : (ref.id||(ref.path||'').split('/').pop()||''))
+        .filter(id => id && cursosAEscuela[id]);
+      if (!cursosValidos.length) return;
+      (d.nivelCargo||[]).forEach(nivel => {
+        (d.pais||['VE']).forEach(pais => {
           const key = `${nivel.toUpperCase()}|${pais.toUpperCase()}`;
-          if (!planMap[key]) planMap[key] = { cursosIds: new Set(), escuela: escuelaNombre };
-          cursosIds.forEach(id => planMap[key].cursosIds.add(id));
-          if (!planMap[key].escuela && escuelaNombre) planMap[key].escuela = escuelaNombre;
+          if (!planMap[key]) planMap[key] = new Set();
+          cursosValidos.forEach(id => planMap[key].add(id));
         });
       });
     });
 
-    // 4. Usuarios con tienda (VP Operaciones)
+    // 4. Usuarios con tienda
     const usersSnap = await db.collection('users').limit(300).get();
     const promesas = usersSnap.docs.map(async uDoc => {
       const u = uDoc.data();
-      if (!u.tienda || u.tienda.trim() === '') return null;
+      if (!u.tienda || !u.tienda.trim()) return null;
       if (!u.display_name && !u.nombre) return null;
-
-      const nivelCargo = (u.nivelCargo || '').toUpperCase();
-      const pais = (u.pais || 'VE').toUpperCase();
-      const key = `${nivelCargo}|${pais}`;
-      const plan = planMap[key];
-
-      // Si no tiene plan de formación en VP Operaciones, omitir
-      if (!plan || plan.cursosIds.size === 0) return null;
-
-      // Leer cursosProgreso
+      const nivelCargo = (u.nivelCargo||'').toUpperCase();
+      const pais = (u.pais||'VE').toUpperCase();
+      const cursosDelPlan = planMap[`${nivelCargo}|${pais}`] || new Set();
       const progSnap = await db.collection('users').doc(uDoc.id).collection('cursosProgreso').get();
       const cursosProgreso = {};
       progSnap.forEach(p => { cursosProgreso[p.id] = p.data(); });
-
       return {
-        id:         uDoc.id,
-        nombre:     u.display_name || ((u.nombre||'')+' '+(u.apellido||'')).trim(),
-        cargo:      u.cargo || '—',
-        nivelCargo: nivelCargo,
-        tienda:     u.tienda,
-        area:       u.area || u.areaGeneral || '—',
-        pais:       u.pais || 'VE',
-        cursosDelPlan: plan.cursosIds,   // Set de IDs que le corresponden
-        escuela:    plan.escuela,
-        cursosProgreso                   // mapa ID → data
+        id: uDoc.id,
+        nombre: u.display_name || ((u.nombre||'')+' '+(u.apellido||'')).trim(),
+        cargo: u.cargo||'—', nivelCargo,
+        tienda: u.tienda, area: u.area||u.areaGeneral||'—',
+        cursosDelPlan, cursosProgreso
       };
     });
 
-    segData = (await Promise.all(promesas)).filter(Boolean);
+    segData = (await Promise.all(promesas)).filter(u => u && u.cursosDelPlan.size > 0);
 
-    // 5. Construir columnas = union de todos los cursos de todos los planes
-    //    Solo cursos que pertenecen a algún plan cargado
-    const cursosMap = {};
-    segData.forEach(u => {
-      u.cursosDelPlan.forEach(id => {
-        if (!cursosMap[id] && cursosCat[id]) {
-          const titulo = cursosCat[id].titulo;
-          let escuela = u.escuela || '';
-          if (!escuela) {
-            const t = titulo.toLowerCase();
-            if (t.includes('comercial')) escuela = 'Comercial';
-            else if (t.includes('servicio')) escuela = 'Servicio';
-            else if (t.includes('excelencia')) escuela = 'Excelencia';
-          }
-          cursosMap[id] = { id, titulo, escuela };
-        }
-      });
-    });
-    segCursosAll = Object.values(cursosMap).sort((a,b) => a.titulo.localeCompare(b.titulo));
+    // 5. Columnas = union de cursos de planes, que estén en escuelas válidas
+    const colMap = {};
+    segData.forEach(u => u.cursosDelPlan.forEach(id => {
+      if (!colMap[id] && cursosAEscuela[id]) colMap[id] = { id, titulo: cursosCat[id]||id, escuela: cursosAEscuela[id] };
+    }));
+    segCursosAll = Object.values(colMap).sort((a,b) => a.escuela.localeCompare(b.escuela)||a.titulo.localeCompare(b.titulo));
 
-    // 6. Poblar filtros
-    const fill = (id, vals, label) => {
-      const el = $(id);
-      if (el) el.innerHTML = `<option value="">${label}</option>` + vals.map(v=>`<option value="${v}">${v}</option>`).join('');
-    };
+    // 6. Filtros
+    const fill = (id, vals, label) => { const el=$(id); if(el) el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${v}">${v}</option>`).join(''); };
     const uniq = arr => [...new Set(arr.filter(v=>v&&v!=='—'))].sort();
-
-    const escuelasDisp = [...new Set(segCursosAll.map(c=>c.escuela).filter(Boolean))].sort();
-    fill('sf-escuela', escuelasDisp,          'Todas las escuelas');
+    fill('sf-escuela', [...new Set(segCursosAll.map(c=>c.escuela).filter(Boolean))].sort(), 'Todas las escuelas');
     fill('sf-area',    uniq(segData.map(u=>u.area)),   'Todas las áreas');
     fill('sf-tienda',  uniq(segData.map(u=>u.tienda)), 'Todas las tiendas');
     fill('sf-cargo',   uniq(segData.map(u=>u.cargo)),  'Todos los cargos');
@@ -1383,11 +1324,7 @@ async function cargarSeguimiento() {
 
   } catch(err) {
     console.error('Error seguimiento:', err);
-    if (cont) cont.innerHTML = `<div style="padding:2rem;text-align:center">
-      <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:6px">No se pudo cargar</div>
-      <div style="font-size:12px;color:var(--tm);margin-bottom:10px">${err.message}</div>
-      <button class="btn btn-o btn-sm" onclick="cargarSeguimiento()">Reintentar</button>
-    </div>`;
+    if (cont) cont.innerHTML = `<div style="padding:2rem;text-align:center"><div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:6px">No se pudo cargar</div><div style="font-size:12px;color:var(--tm);margin-bottom:10px">${err.message}</div><button class="btn btn-o btn-sm" onclick="cargarSeguimiento()">Reintentar</button></div>`;
   }
 }
 
