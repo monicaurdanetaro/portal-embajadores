@@ -1289,28 +1289,16 @@ async function cargarSeguimiento() {
       return '';
     };
 
-    // 2. Usuarios con tienda — paginar para traer todos
-    let todosUsers = [];
-    let lastDoc = null;
-    const BATCH = 500;
+    // 2. Usuarios activos con tienda — query directo en Firestore
+    const usersSnap = await db.collection('users')
+      .where('estado', '==', 'Activo')
+      .get();
+    console.log('Usuarios activos con tienda:', usersSnap.size);
 
-    while (true) {
-      let query = db.collection('users').limit(BATCH);
-      if (lastDoc) query = query.startAfter(lastDoc);
-      const snap = await query.get();
-      if (snap.empty) break;
-      todosUsers = todosUsers.concat(snap.docs);
-      lastDoc = snap.docs[snap.docs.length - 1];
-      if (snap.docs.length < BATCH) break;
-    }
-    console.log('Total usuarios cargados:', todosUsers.length);
-
-    const promesas = todosUsers.map(async uDoc => {
+    const promesas = usersSnap.docs.map(async uDoc => {
       const u = uDoc.data();
       if (!u.tienda || !u.tienda.trim()) return null;
       if (!u.display_name && !u.nombre) return null;
-      // Solo usuarios activos
-      if ((u.estado||u.estatus||'').toLowerCase() !== 'activo') return null;
 
       // Leer cursosProgreso
       const progSnap = await db.collection('users').doc(uDoc.id).collection('cursosProgreso').get();
