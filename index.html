@@ -599,7 +599,7 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
       <div style="display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <select id="sf-cargo" onchange="filtrarSeg()" style="border:none;background:none;font-family:var(--fb);font-size:12px;color:var(--ts);outline:none;cursor:pointer;max-width:160px">
-          <option value="">Todos los cargos</option>
+          <option value="">Todos los niveles</option>
         </select>
       </div>
       <div style="display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
@@ -1103,7 +1103,7 @@ function filtrarSeg() {
   const estatus = $('sf-estatus')?.value || '';
 
   let usuarios = [...segData];
-  if (cargo) usuarios = usuarios.filter(u => u.cargo === cargo);
+  if (cargo) usuarios = usuarios.filter(u => u.nivelCargo === cargo);
 
   // Columnas: programas filtrados por escuela
   let programas = [...segProgramasAll];
@@ -1177,6 +1177,13 @@ function renderTabla(usuarios, programas) {
   }).join('');
 
   // Filas
+  // Ordenar de menor a mayor % de participación
+  usuarios.sort((a, b) => {
+    const pctA = (() => { const apl=programas.filter(p=>a.programas[p.id]!==undefined); return apl.length>0?apl.filter(p=>estadoPrograma(a.programas[p.id])==='formado').length/apl.length:0; })();
+    const pctB = (() => { const apl=programas.filter(p=>b.programas[p.id]!==undefined); return apl.length>0?apl.filter(p=>estadoPrograma(b.programas[p.id])==='formado').length/apl.length:0; })();
+    return pctA - pctB;
+  });
+
   const filas = usuarios.map((u,i) => {
     const aplican = programas.filter(p => u.programas[p.id] !== undefined);
     const f = aplican.filter(p => estadoPrograma(u.programas[p.id])==='formado').length;
@@ -1228,7 +1235,7 @@ function exportarSeguimiento() {
   if (!segData.length) { alert('No hay datos cargados todavía.'); return; }
   const escuela = $('sf-escuela')?.value||'', cargo=$('sf-cargo')?.value||'', estatus=$('sf-estatus')?.value||'';
   let usuarios=[...segData], programas=[...segProgramasAll];
-  if(cargo) usuarios=usuarios.filter(u=>u.cargo===cargo);
+  if(cargo) usuarios=usuarios.filter(u=>u.nivelCargo===cargo);
   if(escuela) programas=programas.filter(p=>p.escuela===escuela);
   if(estatus==='formado') usuarios=usuarios.filter(u=>programas.some(p=>u.programas[p.id]!==undefined&&estadoPrograma(u.programas[p.id])==='formado'));
   else if(estatus==='incompleto') usuarios=usuarios.filter(u=>programas.some(p=>u.programas[p.id]!==undefined&&estadoPrograma(u.programas[p.id])==='incompleto'));
@@ -1314,7 +1321,7 @@ async function cargarSeguimiento(tienda) {
     const fill=(id,vals,label)=>{const el=$(id);if(el)el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${v}">${v}</option>`).join('');};
     const uniq=arr=>[...new Set(arr.filter(v=>v&&v!=='—'))].sort();
     fill('sf-escuela',[...new Set(segProgramasAll.map(p=>p.escuela).filter(Boolean))].sort(),'Todas las escuelas');
-    fill('sf-cargo',uniq(segData.map(u=>u.cargo)),'Todos los cargos');
+    fill('sf-cargo',uniq(segData.map(u=>u.nivelCargo)),'Todos los niveles de cargo');
 
     filtrarSeg();
   } catch(err) {
