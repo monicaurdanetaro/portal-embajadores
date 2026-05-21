@@ -1286,20 +1286,31 @@ async function cargarSeguimiento() {
       }
     });
     console.log('Total cursosAEscuela:', Object.keys(cursosAEscuela).length);
+    // 3. Planes → mapa nivelCargo|pais → Set de cursoIds válidos
     const planesSnap = await db.collection('planesFormacion').get();
     const planMap = {};
+    const extractRef = ref => {
+      if (!ref) return '';
+      if (typeof ref === 'string') return ref.split('/').pop();
+      // Firebase compat DocumentReference
+      try {
+        if (ref.id) return ref.id;
+        if (ref.path) return ref.path.split('/').pop();
+        const del = ref._delegate || {};
+        if (del.id) return del.id;
+        const seg = del._key && del._key.path && del._key.path.segments;
+        if (seg) return seg[seg.length-1];
+      } catch(e) {}
+      return '';
+    };
+
+    console.log('Total planes:', planesSnap.size);
+    let planesVP = 0;
     planesSnap.forEach(p => {
       const d = p.data();
       if (!(d.areaGeneral||[]).includes('VP OPERACIONES')) return;
-      const cursosValidos = (d.cursos||[])
-        .map(ref => {
-          if (typeof ref === 'string') return ref.split('/').pop();
-          if (ref && ref.id) return ref.id;
-          if (ref && ref.path) return ref.path.split('/').pop();
-          if (ref && ref._delegate) return ref._delegate.id || (ref._delegate.path||'').split('/').pop() || '';
-          return '';
-        })
-        .filter(id => id && cursosAEscuela[id]);
+      planesVP++;
+      const cursosValidos = (d.cursos||[]).map(extractRef).filter(id => id && cursosAEscuela[id]);
       if (!cursosValidos.length) return;
       (d.nivelCargo||[]).forEach(nivel => {
         (d.pais||['VE']).forEach(pais => {
@@ -1309,8 +1320,11 @@ async function cargarSeguimiento() {
         });
       });
     });
+    console.log('Planes VP OPERACIONES:', planesVP, '| planMap keys:', Object.keys(planMap).length, Object.keys(planMap).slice(0,3));
 
-    // 4. Usuarios con tienda
+    // 4. Usuarios — usar cursosProgreso del propio documento user para evitar quota
+    // El campo cursosProgreso está como subcolección pero progresoEscuelas/progresoProgramas
+    // están en el documento → usarlos para el % y cursosProgreso para el detalle
     const usersSnap = await db.collection('users').limit(300).get();
     const promesas = usersSnap.docs.map(async uDoc => {
       const u = uDoc.data();
@@ -1318,10 +1332,14 @@ async function cargarSeguimiento() {
       if (!u.display_name && !u.nombre) return null;
       const nivelCargo = (u.nivelCargo||'').toUpperCase();
       const pais = (u.pais||'VE').toUpperCase();
-      const cursosDelPlan = planMap[`${nivelCargo}|${pais}`] || new Set();
+      const cursosDelPlan = planMap[`${nivelCargo}|${pais}`];
+      if (!cursosDelPlan || cursosDelPlan.size === 0) return null;
+
+      // Solo leer cursosProgreso para usuarios con plan
       const progSnap = await db.collection('users').doc(uDoc.id).collection('cursosProgreso').get();
       const cursosProgreso = {};
       progSnap.forEach(p => { cursosProgreso[p.id] = p.data(); });
+
       return {
         id: uDoc.id,
         nombre: u.display_name || ((u.nombre||'')+' '+(u.apellido||'')).trim(),
@@ -1331,19 +1349,16 @@ async function cargarSeguimiento() {
       };
     });
 
-    segData = (await Promise.all(promesas)).filter(u => u && u.cursosDelPlan.size > 0);
+    segData = (await Promise.all(promesas)).filter(Boolean);
+    console.log('segData count:', segData.length);
 
-    // 5. Columnas = union de cursos de planes, que estén en escuelas válidas
+    // 5. Columnas
     const colMap = {};
     segData.forEach(u => u.cursosDelPlan.forEach(id => {
       if (!colMap[id] && cursosAEscuela[id]) colMap[id] = { id, titulo: cursosCat[id]||id, escuela: cursosAEscuela[id] };
     }));
     segCursosAll = Object.values(colMap).sort((a,b) => a.escuela.localeCompare(b.escuela)||a.titulo.localeCompare(b.titulo));
-
-    console.log('planMap keys:', Object.keys(planMap).slice(0,5));
-    console.log('segData count:', segData.length);
     console.log('segCursosAll count:', segCursosAll.length);
-    if (segData.length > 0) console.log('Primer usuario cursosDelPlan size:', segData[0].cursosDelPlan.size, 'nivelCargo:', segData[0].nivelCargo);
 
     // 6. Filtros
     const fill = (id, vals, label) => { const el=$(id); if(el) el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${v}">${v}</option>`).join(''); };
