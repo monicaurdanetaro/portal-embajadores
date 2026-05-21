@@ -1076,7 +1076,6 @@ async function inicializarSeguimiento() {
     const tiendas = new Set();
     snap.forEach(d => { const t=d.data().tienda; if(t&&t.trim()) tiendas.add(t.trim()); });
     todasLasTiendas = [...tiendas].sort();
-    console.log('Tiendas cargadas:', todasLasTiendas.length);
   } catch(e) { console.error('Error init:', e); }
 }
 
@@ -1332,9 +1331,10 @@ async function cargarSeguimiento(tienda) {
   const cont=$('sf-tabla-container');
   if(cont) cont.innerHTML=`<div style="display:flex;align-items:center;gap:10px;padding:2rem;color:var(--tm);font-size:13px"><div style="width:16px;height:16px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>Cargando datos de ${tienda}...</div>`;
   try {
-    const usersSnap = await db.collection('users').where('estado','==','Activo').where('tienda','==',tienda).get();
-    console.log('Usuarios en tienda:', usersSnap.size);
-    const promesas = usersSnap.docs.map(async uDoc => {
+    const usersSnap = await db.collection('users').where('tienda','==',tienda).get();
+    const userDocs = usersSnap.docs.filter(d => d.data().estado === 'Activo');
+    console.log('Usuarios en tienda:', usersSnap.size, 'Activos:', userDocs.length);
+    const promesas = userDocs.map(async uDoc => {
       const u = uDoc.data();
       if (!u.display_name && !u.nombre) return null;
       const progSnap = await db.collection('users').doc(uDoc.id).collection('cursosProgreso').get();
