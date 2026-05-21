@@ -1263,7 +1263,17 @@ async function cargarSeguimiento() {
       });
     });
 
-    // 3. Planes → mapa nivelCargo|pais → Set de cursoIds válidos (de escuelas)
+    // DEBUG: ver qué trae escuelas
+    escuelasSnap.forEach(e => {
+      const d = e.data();
+      const t = (d.titulo || '').toLowerCase();
+      if (t.includes('comercial') || t.includes('servicio') || t.includes('excelencia')) {
+        console.log('ESCUELA:', d.titulo, '| cursosInProgramas count:', (d.cursosInProgramas||[]).length, '| cursos count:', (d.cursos||[]).length);
+        const refs = d.cursosInProgramas || d.cursos || [];
+        if (refs.length > 0) console.log('  Primer ref:', JSON.stringify(refs[0]));
+      }
+    });
+    console.log('Total cursosAEscuela:', Object.keys(cursosAEscuela).length);
     const planesSnap = await db.collection('planesFormacion').get();
     const planMap = {};
     planesSnap.forEach(p => {
@@ -1311,6 +1321,11 @@ async function cargarSeguimiento() {
       if (!colMap[id] && cursosAEscuela[id]) colMap[id] = { id, titulo: cursosCat[id]||id, escuela: cursosAEscuela[id] };
     }));
     segCursosAll = Object.values(colMap).sort((a,b) => a.escuela.localeCompare(b.escuela)||a.titulo.localeCompare(b.titulo));
+
+    console.log('planMap keys:', Object.keys(planMap).slice(0,5));
+    console.log('segData count:', segData.length);
+    console.log('segCursosAll count:', segCursosAll.length);
+    if (segData.length > 0) console.log('Primer usuario cursosDelPlan size:', segData[0].cursosDelPlan.size, 'nivelCargo:', segData[0].nivelCargo);
 
     // 6. Filtros
     const fill = (id, vals, label) => { const el=$(id); if(el) el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${v}">${v}</option>`).join(''); };
