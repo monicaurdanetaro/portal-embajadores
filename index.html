@@ -563,28 +563,39 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
         <h2 class="sec-ttl">Seguimiento de capacitaciones</h2>
         <p class="sec-sub">Estatus de formación por colaborador y curso.</p>
       </div>
-      <button class="btn btn-o btn-sm" onclick="cargarSeguimiento()" style="margin-top:.3rem">↻ Actualizar</button>
       <button class="btn btn-p btn-sm" onclick="exportarSeguimiento()" style="margin-top:.3rem">⬇ Exportar Excel</button>
     </div>
 
-    <!-- Filtros macro -->
-    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+    <!-- Selector de tienda (macro) con buscador -->
+    <div class="card" style="margin-bottom:1.2rem;padding:1.2rem 1.4rem">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <div style="flex:1;min-width:220px">
+          <div style="font-size:13px;font-weight:600;color:var(--tp);margin-bottom:6px">Selecciona tu tienda para visualizar los datos</div>
+          <div style="position:relative">
+            <input id="sf-tienda-search" type="text" placeholder="Escribe el nombre de tu tienda..."
+              oninput="filtrarOpcionesTienda(this.value)"
+              onfocus="document.getElementById('sf-tienda-dropdown').style.display='block'"
+              style="width:100%;background:var(--bg);border:1.5px solid rgba(99,130,255,.25);border-radius:9px;padding:9px 12px 9px 36px;font-family:var(--fb);font-size:13px;color:var(--tp);outline:none;transition:border-color .2s"
+              onfocusin="this.style.borderColor='rgba(99,130,255,.5)'"
+              onfocusout="setTimeout(()=>document.getElementById('sf-tienda-dropdown').style.display='none',200)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round" style="position:absolute;left:11px;top:50%;transform:translateY(-50%)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <div id="sf-tienda-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:100;max-height:200px;overflow-y:auto;margin-top:4px" id="sf-tienda-dropdown"></div>
+          </div>
+        </div>
+        <div id="sf-tienda-seleccionada" style="display:none;align-items:center;gap:8px;background:var(--blue-bg);border:1px solid rgba(99,130,255,.2);padding:7px 12px;border-radius:8px">
+          <span id="sf-tienda-label" style="font-size:13px;font-weight:600;color:var(--blue)"></span>
+          <button onclick="limpiarTienda()" style="background:none;border:none;cursor:pointer;color:var(--blue);font-size:16px;line-height:1;padding:0">×</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros secundarios (ocultos hasta seleccionar tienda) -->
+    <div id="sf-filtros-secundarios" style="display:none;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
       <div style="display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
         <select id="sf-escuela" onchange="filtrarSeg()" style="border:none;background:none;font-family:var(--fb);font-size:12px;color:var(--ts);outline:none;cursor:pointer;max-width:180px">
           <option value="">Todas las escuelas</option>
-        </select>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8"/></svg>
-        <select id="sf-area" onchange="filtrarSeg()" style="border:none;background:none;font-family:var(--fb);font-size:12px;color:var(--ts);outline:none;cursor:pointer;max-width:150px">
-          <option value="">Todas las áreas</option>
-        </select>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-        <select id="sf-tienda" onchange="filtrarSeg()" style="border:none;background:none;font-family:var(--fb);font-size:12px;color:var(--ts);outline:none;cursor:pointer;max-width:180px">
-          <option value="">Todas las tiendas</option>
         </select>
       </div>
       <div style="display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
@@ -604,8 +615,8 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
       <span id="sf-contador" style="font-size:11px;color:var(--tm);margin-left:auto;font-weight:500"></span>
     </div>
 
-    <!-- % cumplimiento global -->
-    <div class="card" style="margin-bottom:1rem;padding:0">
+    <!-- Stats -->
+    <div class="card" id="sf-stats-card" style="display:none;margin-bottom:1rem;padding:0">
       <div style="display:grid;grid-template-columns:repeat(4,1fr)">
         <div style="padding:.9rem 1rem;border-right:1px solid var(--border)">
           <div style="font-family:var(--fd);font-size:1.5rem;font-weight:800;color:var(--navy)" id="sf-pct">—</div>
@@ -627,11 +638,12 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
       </div>
     </div>
 
-    <!-- Tabla dinámica -->
+    <!-- Estado inicial / tabla -->
     <div id="sf-tabla-container">
-      <div style="display:flex;align-items:center;gap:10px;padding:2rem;color:var(--tm);font-size:13px">
-        <div style="width:16px;height:16px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>
-        Cargando datos desde Firebase...
+      <div style="text-align:center;padding:3rem 2rem;color:var(--tm)">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--blue-bg)" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:1rem"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <div style="font-size:14px;font-weight:600;color:var(--ts);margin-bottom:4px">Selecciona una tienda para comenzar</div>
+        <div style="font-size:12px;color:var(--tm)">Escribe el nombre de tu tienda en el campo de arriba</div>
       </div>
     </div>
   </div>
@@ -1022,9 +1034,88 @@ const db = firebase.firestore();
 
 // ── SEGUIMIENTO FIREBASE (solo lectura) ──────────
 // ── SEGUIMIENTO ──────────────────────────────────
-let segData = [];        // todos los usuarios con sus cursos
-let segCursosAll = [];   // lista ordenada de todos los cursos (columnas)
+// ── SEGUIMIENTO ──────────────────────────────────
+let segData = [];
+let segCursosAll = [];
+let segTiendaActual = '';
+let todasLasTiendas = [];
+let cursosCatGlobal = {};
 
+const escuelaDeCurso = titulo => {
+  const t = (titulo||'').toLowerCase();
+  if (t.includes('cuidado facial')||t.includes('cuidado del cabello')||t.includes('cuidado bucal')||
+      t.includes('cuidado de las uñas')||t.includes('cuidado de heridas')||t.includes('cuidado de pies')||
+      t.includes('dermocosm')||t.includes('nutrici')||t.includes('vitaminas')||
+      t.includes('complementos de salud')||t.includes('medicamentos rx')||t.includes(' otc')||
+      t.includes('farmacéuticos')||t.includes('farmaceuticos')||t.includes('cosméticos')||
+      t.includes('cosmeticos')||t.includes('maquillaje')||t.includes('maybelline')||
+      t.includes('esmaltes')||t.includes('estrategia comercial')||t.includes('rutina')||
+      t.includes('marca propia')||t.includes('sellado')||t.includes('gástric')||
+      t.includes('gastric')||t.includes('dolor y fiebre')||t.includes('primeros auxilios')||
+      t.includes('escuela comercial')||t.includes('flormar')||t.includes('cerave')||
+      t.includes('isdin')||t.includes('coloraci')||t.includes('ampollas')||
+      t.includes('fórmulas magistrales')||t.includes('formulas magistrales')||t.includes('sustitutos'))
+    return 'Comercial';
+  if (t.includes('conducta')||t.includes('qué hacer')||t.includes('que hacer')||
+      t.includes('manejo de situaciones')||t.includes('cultura de servicio')||
+      t.includes('servicio al cliente')||t.includes('atenci')||t.includes('autopago')||
+      t.includes('autofarmacia')||t.includes('asesor'))
+    return 'Servicio';
+  if (t.includes('planograma')||t.includes('pilares de la operaci')||
+      t.includes('manejo de inventario')||t.includes('manejo del dep')||
+      t.includes('inventario')||t.includes('conciliaci')||t.includes('auditor'))
+    return 'Excelencia';
+  return '';
+};
+
+async function inicializarSeguimiento() {
+  try {
+    const cursosSnap = await db.collection('cursos').get();
+    cursosSnap.forEach(c => { cursosCatGlobal[c.id] = c.data().titulo || c.data().nombre || c.id; });
+    const snap = await db.collection('users').where('estado','==','Activo').get();
+    const tiendas = new Set();
+    snap.forEach(d => { const t=d.data().tienda; if(t&&t.trim()) tiendas.add(t.trim()); });
+    todasLasTiendas = [...tiendas].sort();
+    console.log('Tiendas cargadas:', todasLasTiendas.length);
+  } catch(e) { console.error('Error init:', e); }
+}
+
+function mostrarDropdownTiendas(lista) {
+  const dd = $('sf-tienda-dropdown');
+  if (!dd) return;
+  if (!lista.length) { dd.innerHTML=`<div style="padding:8px 12px;font-size:12px;color:var(--tm)">No se encontraron tiendas</div>`; return; }
+  dd.innerHTML = lista.slice(0,50).map(t =>
+    `<div onclick="seleccionarTienda('${t.replace(/'/g,"\\'")}')" style="padding:8px 12px;font-size:12.5px;color:var(--tp);cursor:pointer" onmouseover="this.style.background='var(--blue-bg)'" onmouseout="this.style.background=''">${t}</div>`
+  ).join('') + (lista.length>50?`<div style="padding:6px 12px;font-size:11px;color:var(--tm)">Escribe más para filtrar...</div>`:'');
+}
+
+function filtrarOpcionesTienda(val) {
+  const dd = $('sf-tienda-dropdown');
+  if (dd) dd.style.display = 'block';
+  const filtradas = val.trim() ? todasLasTiendas.filter(t=>t.toLowerCase().includes(val.toLowerCase())) : todasLasTiendas;
+  mostrarDropdownTiendas(filtradas);
+}
+
+function seleccionarTienda(tienda) {
+  segTiendaActual = tienda;
+  const input=$('sf-tienda-search'), sel=$('sf-tienda-seleccionada'), label=$('sf-tienda-label'), dd=$('sf-tienda-dropdown');
+  if(input) input.value='';
+  if(sel) sel.style.display='flex';
+  if(label) label.textContent=tienda;
+  if(dd) dd.style.display='none';
+  cargarSeguimiento(tienda);
+}
+
+function limpiarTienda() {
+  segTiendaActual=''; segData=[];
+  const sel=$('sf-tienda-seleccionada'), filt=$('sf-filtros-secundarios'), stats=$('sf-stats-card'), cont=$('sf-tabla-container');
+  if(sel) sel.style.display='none';
+  if(filt) filt.style.display='none';
+  if(stats) stats.style.display='none';
+  if(cont) cont.innerHTML=`<div style="text-align:center;padding:3rem 2rem;color:var(--tm)"><div style="font-size:14px;font-weight:600;color:var(--ts);margin-bottom:4px">Selecciona una tienda para comenzar</div><div style="font-size:12px;color:var(--tm)">Escribe el nombre de tu tienda en el campo de arriba</div></div>`;
+}
+
+function filtrarSeg() {
 function filtrarSeg() {
   const escuela = $('sf-escuela')?.value || '';
   const area    = $('sf-area')?.value    || '';
@@ -1236,125 +1327,42 @@ function exportarSeguimiento() {
   XLSX.writeFile(wb, nombre);
 }
 
-async function cargarSeguimiento() {
-  const cont = $('sf-tabla-container');
-  if (cont) cont.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:2rem;color:var(--tm);font-size:13px"><div style="width:16px;height:16px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>Cargando datos desde Firebase...</div>`;
 
+async function cargarSeguimiento(tienda) {
+  const cont=$('sf-tabla-container');
+  if(cont) cont.innerHTML=`<div style="display:flex;align-items:center;gap:10px;padding:2rem;color:var(--tm);font-size:13px"><div style="width:16px;height:16px;border:2px solid var(--blue-bg);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite"></div>Cargando datos de ${tienda}...</div>`;
   try {
-    // 1. Catálogo cursos → mapa ID:titulo
-    const cursosSnap = await db.collection('cursos').get();
-    const cursosCat = {};
-    cursosSnap.forEach(c => { cursosCat[c.id] = c.data().titulo || c.data().nombre || c.id; });
-
-    // Clasificar curso por escuela según título real
-    const escuelaDeCurso = titulo => {
-      const t = (titulo||'').toLowerCase();
-      // Escuela Comercial
-      if (t.includes('cuidado facial') || t.includes('cuidado del cabello') ||
-          t.includes('cuidado bucal') || t.includes('cuidado de las uñas') ||
-          t.includes('cuidado de heridas') || t.includes('cuidado de pies') ||
-          t.includes('dermocosm') || t.includes('nutrición') || t.includes('nutricion') ||
-          t.includes('vitaminas') || t.includes('complementos de salud') ||
-          t.includes('medicamentos rx') || t.includes('medicamentos otc') ||
-          t.includes('otc') || t.includes('farmacéuticos') || t.includes('farmaceuticos') ||
-          t.includes('cosméticos') || t.includes('cosmeticos') ||
-          t.includes('maquillaje') || t.includes('maybelline') || t.includes('esmaltes') ||
-          t.includes('estrategia comercial') || t.includes('planificación de actividades') ||
-          t.includes('rutina') || t.includes('marca propia') || t.includes('sellado') ||
-          t.includes('gástrico') || t.includes('gastrico') || t.includes('dolor y fiebre') ||
-          t.includes('servicios farmacéuticos') || t.includes('servicios farmaceuticos') ||
-          t.includes('dispensación') || t.includes('dispensacion') ||
-          t.includes('primeros auxilios') || t.includes('escuela comercial') ||
-          t.includes('flormar') || t.includes('cerave') || t.includes('isdin') ||
-          t.includes('coloración') || t.includes('coloracion') ||
-          t.includes('ampollas') || t.includes('línea dermocosm') || t.includes('linea dermocosm') ||
-          t.includes('almacenamiento de productos') || t.includes('fórmulas magistrales') ||
-          t.includes('formulas magistrales') || t.includes('sustitutos'))
-        return 'Comercial';
-      // Escuela Servicio
-      if (t.includes('conducta') || t.includes('qué hacer') || t.includes('que hacer') ||
-          t.includes('manejo de situaciones') || t.includes('cultura de servicio') ||
-          t.includes('servicio al cliente') || t.includes('atención en el mostrador') ||
-          t.includes('atencion en el mostrador') || t.includes('autopago') ||
-          t.includes('autofarmacia') || t.includes('asesoría en el piso') ||
-          t.includes('asesoria en el piso'))
-        return 'Servicio';
-      // Escuela Excelencia
-      if (t.includes('planograma') || t.includes('pilares de la operación') ||
-          t.includes('pilares de la operacion') || t.includes('manejo de inventario') ||
-          t.includes('manejo del depósito') || t.includes('manejo del deposito') ||
-          t.includes('inventario') || t.includes('conciliación') || t.includes('conciliacion') ||
-          t.includes('auditoría') || t.includes('auditoria'))
-        return 'Excelencia';
-      return '';
-    };
-
-    // 2. Usuarios activos con tienda — sin índice compuesto
-    const usersSnap = await db.collection('users')
-      .where('estado', '==', 'Activo')
-      .get();
-    console.log('Usuarios activos:', usersSnap.size);
-
+    const usersSnap = await db.collection('users').where('estado','==','Activo').where('tienda','==',tienda).get();
+    console.log('Usuarios en tienda:', usersSnap.size);
     const promesas = usersSnap.docs.map(async uDoc => {
       const u = uDoc.data();
-      if (!u.tienda || !u.tienda.trim()) return null;
       if (!u.display_name && !u.nombre) return null;
-
-      // Leer cursosProgreso
       const progSnap = await db.collection('users').doc(uDoc.id).collection('cursosProgreso').get();
-      const cursosProgreso = {};
-      // Solo guardar cursos de las 3 escuelas
-      progSnap.forEach(p => {
-        const titulo = cursosCat[p.id] || '';
-        if (escuelaDeCurso(titulo)) cursosProgreso[p.id] = p.data();
-      });
-
-      // cursosDelPlan = solo los que le aplican = los que están en su cursosProgreso de escuelas
-      const cursosDelPlan = new Set(Object.keys(cursosProgreso));
-      if (cursosDelPlan.size === 0) return null;
-
-      return {
-        id: uDoc.id,
-        nombre: u.display_name || ((u.nombre||'')+' '+(u.apellido||'')).trim(),
-        cargo: u.cargo||'—',
-        nivelCargo: (u.nivelCargo||'').toUpperCase(),
-        tienda: u.tienda,
-        area: u.area||u.areaGeneral||'—',
-        cursosDelPlan,
-        cursosProgreso
-      };
+      const cursosProgreso={};
+      progSnap.forEach(p=>{ const titulo=cursosCatGlobal[p.id]||''; if(escuelaDeCurso(titulo)) cursosProgreso[p.id]=p.data(); });
+      const cursosDelPlan=new Set(Object.keys(cursosProgreso));
+      if(cursosDelPlan.size===0) return null;
+      return { id:uDoc.id, nombre:u.display_name||((u.nombre||'')+' '+(u.apellido||'')).trim(),
+        cargo:u.cargo||'—', nivelCargo:(u.nivelCargo||'').toUpperCase(),
+        tienda:u.tienda, area:u.area||u.areaGeneral||'—', cursosDelPlan, cursosProgreso };
     });
-
-    segData = (await Promise.all(promesas)).filter(Boolean);
+    segData=(await Promise.all(promesas)).filter(Boolean);
     console.log('segData:', segData.length);
-
-    // 3. Columnas = union de todos los cursos de escuelas
-    const colMap = {};
-    segData.forEach(u => u.cursosDelPlan.forEach(id => {
-      if (!colMap[id]) {
-        const titulo = cursosCat[id] || id;
-        const escuela = escuelaDeCurso(titulo);
-        if (escuela) colMap[id] = { id, titulo, escuela };
-      }
+    const colMap={};
+    segData.forEach(u=>u.cursosDelPlan.forEach(id=>{
+      if(!colMap[id]){const titulo=cursosCatGlobal[id]||id;const escuela=escuelaDeCurso(titulo);if(escuela)colMap[id]={id,titulo,escuela};}
     }));
-    segCursosAll = Object.values(colMap).sort((a,b) =>
-      a.escuela.localeCompare(b.escuela) || a.titulo.localeCompare(b.titulo)
-    );
-    console.log('segCursosAll:', segCursosAll.length);
-
-    // 4. Filtros
-    const fill = (id, vals, label) => { const el=$(id); if(el) el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${v}">${v}</option>`).join(''); };
-    const uniq = arr => [...new Set(arr.filter(v=>v&&v!=='—'))].sort();
-    fill('sf-escuela', [...new Set(segCursosAll.map(c=>c.escuela).filter(Boolean))].sort(), 'Todas las escuelas');
-    fill('sf-area',    uniq(segData.map(u=>u.area)),   'Todas las áreas');
-    fill('sf-tienda',  uniq(segData.map(u=>u.tienda)), 'Todas las tiendas');
-    fill('sf-cargo',   uniq(segData.map(u=>u.cargo)),  'Todos los cargos');
-
+    segCursosAll=Object.values(colMap).sort((a,b)=>a.escuela.localeCompare(b.escuela)||a.titulo.localeCompare(b.titulo));
+    const filt=$('sf-filtros-secundarios'); if(filt) filt.style.display='flex';
+    const stats=$('sf-stats-card'); if(stats) stats.style.display='block';
+    const fill=(id,vals,label)=>{const el=$(id);if(el)el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${v}">${v}</option>`).join('');};
+    const uniq=arr=>[...new Set(arr.filter(v=>v&&v!=='—'))].sort();
+    fill('sf-escuela',[...new Set(segCursosAll.map(c=>c.escuela).filter(Boolean))].sort(),'Todas las escuelas');
+    fill('sf-cargo',uniq(segData.map(u=>u.cargo)),'Todos los cargos');
     filtrarSeg();
-
   } catch(err) {
-    console.error('Error seguimiento:', err);
-    if (cont) cont.innerHTML = `<div style="padding:2rem;text-align:center"><div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:6px">No se pudo cargar</div><div style="font-size:12px;color:var(--tm);margin-bottom:10px">${err.message}</div><button class="btn btn-o btn-sm" onclick="cargarSeguimiento()">Reintentar</button></div>`;
+    console.error('Error seguimiento:',err);
+    if(cont) cont.innerHTML=`<div style="padding:2rem;text-align:center"><div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:6px">No se pudo cargar</div><div style="font-size:12px;color:var(--tm);margin-bottom:10px">${err.message}</div><button class="btn btn-o btn-sm" onclick="cargarSeguimiento('${tienda}')">Reintentar</button></div>`;
   }
 }
 // ── UTILIDADES ──────────────────────────────────
@@ -1377,6 +1385,7 @@ function show(id) {
   if (map[id] !== undefined) document.querySelectorAll('.ni')[map[id]]?.classList.add('active');
   if (id === 'planificacion') renderCalendario();
   if (id === 'admin') actualizarStatsAdmin();
+  if (id === 'seguimiento' && todasLasTiendas.length === 0) inicializarSeguimiento();
   if (id === 'seguimiento') cargarSeguimiento();
 }
 
