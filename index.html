@@ -1245,12 +1245,39 @@ async function cargarSeguimiento() {
     const cursosCat = {};
     cursosSnap.forEach(c => { cursosCat[c.id] = c.data().titulo || c.data().nombre || c.id; });
 
-    // Inferir escuela desde título del curso
+    // Inferir escuela desde título del curso — basado en títulos reales de Firebase
     const escuelaDeCurso = titulo => {
       const t = (titulo||'').toLowerCase();
-      if (t.includes('comercial')) return 'Comercial';
-      if (t.includes('servicio'))  return 'Servicio';
-      if (t.includes('excelencia')) return 'Excelencia';
+      // Escuela Comercial
+      if (t.includes('escuela comercial') || t.includes('| escuela comercial') ||
+          t.includes('cuidado facial') || t.includes('cuidado del cabello') ||
+          t.includes('cuidado bucal') || t.includes('cuidado de las uñas') ||
+          t.includes('cuidado de heridas') || t.includes('dermocosméticos') ||
+          t.includes('dermocosmético') || t.includes('nutrición') ||
+          t.includes('vitaminas') || t.includes('complementos de salud') ||
+          t.includes('medicamentos rx') || t.includes('otc') ||
+          t.includes('farmacéuticos') || t.includes('cosméticos') ||
+          t.includes('cosmético') || t.includes('maquillaje') ||
+          t.includes('maybelline') || t.includes('esmaltes') ||
+          t.includes('estrategia comercial') || t.includes('planificación de actividades') ||
+          t.includes('rutina') || t.includes('marca propia') ||
+          t.includes('cuidado de pies') || t.includes('sellado') ||
+          t.includes('manejo de estados gástricos') || t.includes('manejo del dolor') ||
+          t.includes('servicios farmacéuticos') || t.includes('dispensación') ||
+          t.includes('medicinas de otc') || t.includes('primeros auxilios'))
+        return 'Comercial';
+      // Escuela de Servicio
+      if (t.includes('conducta') || t.includes('qué hacer') || t.includes('que hacer') ||
+          t.includes('manejo de situaciones') || t.includes('cultura de servicio') ||
+          t.includes('servicio al cliente') || t.includes('atención en el mostrador') ||
+          t.includes('autopago') || t.includes('autofarmacia') || t.includes('asesoría en el piso'))
+        return 'Servicio';
+      // Escuela de Excelencia
+      if (t.includes('planograma') || t.includes('pilares de la operación') ||
+          t.includes('manejo de inventario') || t.includes('manejo del depósito') ||
+          t.includes('inventario') || t.includes('depósito') || t.includes('deposito') ||
+          t.includes('auditoría de conciliación') || t.includes('conciliación'))
+        return 'Excelencia';
       return '';
     };
 
