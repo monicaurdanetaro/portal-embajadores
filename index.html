@@ -264,9 +264,12 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
     
   </div>
 
-  <div class="sb-search">
+  <div class="sb-search" style="cursor:text">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <span>Buscar...</span>
+    <input id="sb-search-input" type="text" placeholder="Buscar..." 
+      style="border:none;background:none;outline:none;font-family:var(--fb);font-size:12px;color:var(--tp);flex:1;width:100%"
+      oninput="buscarGlobal(this.value)"
+      onkeydown="if(event.key==='Escape'){this.value='';buscarGlobal('')}">
     <kbd>⌘K</kbd>
   </div>
 
@@ -1031,9 +1034,17 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 
+// ── BUSQUEDA GLOBAL ──────────────────────────────
+function buscarGlobal(q) {
+  const homeInput = document.querySelector('.h-search input');
+  if (homeInput) homeInput.value = q;
+  if (q.trim()) {
+    show('home');
+    if (homeInput) homeInput.dispatchEvent(new Event('input'));
+  }
+}
+
 // ── SEGUIMIENTO FIREBASE (solo lectura) ──────────
-// ── SEGUIMIENTO ──────────────────────────────────
-// ── SEGUIMIENTO ──────────────────────────────────
 // ── SEGUIMIENTO ──────────────────────────────────
 let segData = [];
 let segProgramasAll = []; // columnas: programas únicos
